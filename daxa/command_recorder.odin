@@ -6,8 +6,6 @@ import vk "vendor:vulkan"
 
 _ :: c
 
-foreign import lib "daxa.lib"
-
 @(default_calling_convention="c", link_prefix="daxa_")
 foreign lib {
 	cmd_set_rasterization_samples     :: proc(cmd_enc: CommandRecorder, samples: VkSampleCountFlagBits) -> Result ---

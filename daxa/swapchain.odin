@@ -2,8 +2,6 @@ package daxa
 
 import vk "vendor:vulkan"
 
-foreign import lib "daxa.lib"
-
 /// @brief  A platform-dependent window resource.
 ///         On Windows, this is an `HWND`
 ///         On Linux X11, this is a `Window`

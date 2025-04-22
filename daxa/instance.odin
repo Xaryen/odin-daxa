@@ -2,8 +2,6 @@ package daxa
 
 import vk "vendor:vulkan"
 
-foreign import lib "daxa.lib"
-
 InstanceFlags :: Flags
 
 @(default_calling_convention="c", link_prefix="daxa_")

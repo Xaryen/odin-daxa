@@ -4,8 +4,6 @@ import "core:c"
 
 _ :: c
 
-foreign import lib "daxa.lib"
-
 VmaAllocation_T :: struct {
 }
 
@@ -13,7 +11,19 @@ VmaAllocation :: struct {}
 
 ImageFlags :: u32
 
-ImageUsageFlags :: u32
+ImageUsageFlags :: bit_set[ImageUsageFlag; u32]
+ImageUsageFlag :: enum {
+	NONE,
+	TRANSFER_SRC,
+	TRANSFER_DST,
+	SHADER_SAMPLED,
+	SHADER_STORAGE,
+	COLOR_ATTACHMENT,
+	DEPTH_STENCIL_ATTACHMENT,
+	TRANSIENT_ATTACHMENT,
+	FRAGMENT_SHADING_RATE_ATTACHMENT = 8,
+	FRAGMENT_DENSITY_MAP             = 9,
+}
 
 SharingMode :: enum c.int {
 	EXCLUSIVE,

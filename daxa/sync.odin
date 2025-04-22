@@ -5,8 +5,6 @@ import vk "vendor:vulkan"
 
 _ :: c
 
-foreign import lib "daxa.lib"
-
 EventWaitInfo :: EventSignalInfo
 
 @(default_calling_convention="c", link_prefix="daxa_")

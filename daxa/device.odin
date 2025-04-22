@@ -5,8 +5,6 @@ import vk "vendor:vulkan"
 
 _ :: c
 
-foreign import lib "daxa.lib"
-
 DeviceType :: enum c.int {
 	OTHER          = 0,
 	INTEGRATED_GPU = 1,

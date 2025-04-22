@@ -4,8 +4,6 @@ import "core:c"
 
 _ :: c
 
-foreign import lib "daxa.lib"
-
 // TODO:    Rename errors based on their fatality!
 //          DAXA_RESULT_FATAL_ERROR should be the prefix for unrecoverable errors.
 Result :: enum c.int {

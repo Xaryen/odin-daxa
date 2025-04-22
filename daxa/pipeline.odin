@@ -1,9 +1,5 @@
 package daxa
 
-
-
-foreign import lib "daxa.lib"
-
 @(default_calling_convention="c", link_prefix="daxa_")
 foreign lib {
 	ray_tracing_pipeline_info               :: proc(ray_tracing_pipeline: RayTracingPipeline) -> ^RayTracingPipelineInfo ---

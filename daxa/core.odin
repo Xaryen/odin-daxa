@@ -4,17 +4,17 @@ import "core:c"
 
 _ :: c
 
-//foreign import lib "daxa.lib"
 
-ImplDevice :: struct {}
-Device :: struct {}
 ImplCommandRecorder :: struct {}
 CommandRecorder :: struct {}
 ImplExecutableCommandList :: struct {}
 ExecutableCommandList :: struct {}
-ImplInstance :: struct {}
 
-Instance :: struct {}
+ImplInstance :: struct {}
+Instance     :: ^ImplInstance
+
+ImplDevice :: struct {}
+Device     :: ^ImplDevice
 
 ImplRayTracingPipeline :: struct {}
 
@@ -30,10 +30,8 @@ ImplRasterPipeline :: struct {
 
 RasterPipeline :: struct {}
 
-ImplSwapchain :: struct {
-}
-
-Swapchain :: struct {}
+ImplSwapchain :: struct {}
+Swapchain     :: ^ImplSwapchain
 
 ImplBinarySemaphore :: struct {
 }

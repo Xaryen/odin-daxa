@@ -362,7 +362,17 @@ DeviceInfo2 :: struct
 	max_allowed_acceleration_structures: uint32_t,
 	name: SmallString,
 }
-//DAXA_DEFAULT_DEVICE_INFO_2
+
+@rodata
+DEFAULT_DEVICE_INFO_2 := DeviceInfo2{
+	physical_device_index = max(u32),
+	explicit_features = .BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY,
+	max_allowed_images = 10000,
+	max_allowed_buffers = 10000,
+	max_allowed_samplers = 400,
+	max_allowed_acceleration_structures = 10000,
+	name = {},
+}
 
 // WARNING: DEPRECATED, use daxa_DeviceInfo2 instead!
 DeviceInfo :: struct
@@ -737,11 +747,23 @@ BlasAabbGeometryInfo :: struct {
 //instance.h/////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 
+DAXA_INSTANCE_FLAG_DEBUG_UTIL:                InstanceFlags : 0x1;
+DAXA_INSTANCE_FLAG_PARENT_MUST_OUTLIVE_CHILD: InstanceFlags : 0x2;
+
 InstanceInfo :: struct
 {
 	flags: InstanceFlags,
 	engine_name: SmallString,
 	app_name: SmallString,
+}
+
+// smallstring could be replaced by something with cstring?
+
+@rodata
+DEFAULT_INSTANCE_INFO := InstanceInfo{
+	flags = DAXA_INSTANCE_FLAG_DEBUG_UTIL,
+	engine_name = {},
+	app_name = {},
 }
 
 // pipeline.h////////////////////////////////////////////////////////
