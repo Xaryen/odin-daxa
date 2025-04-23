@@ -1,6 +1,7 @@
 package daxa
 
 import "core:c"
+import vk "vendor:vulkan"
 
 _ :: c
 
@@ -158,4 +159,64 @@ foreign lib {
 	timeline_query_pool_query_results :: proc(timeline_query_pool: TimelineQueryPool, start: u32, count: u32, out_results: ^u64) -> Result ---
 	timeline_query_pool_inc_refcnt    :: proc(timeline_query_pool: TimelineQueryPool) -> u64 ---
 	timeline_query_pool_dec_refcnt    :: proc(timeline_query_pool: TimelineQueryPool) -> u64 ---
+}
+
+_DAXA_FIXED_LIST_SIZE_T  :: u8
+_DAXA_VARIANT_INDEX_TYPE :: u8
+
+Variant :: struct($UNION: typeid) {
+	values: UNION, //raw union
+	index: _DAXA_VARIANT_INDEX_TYPE,
+}
+
+Optional :: struct($T: typeid) {
+	value: T,
+	has_value: Bool8,
+}
+
+SpanToConst :: struct($T: typeid) {
+	data: ^T, //const *
+	size: uint,
+}
+
+FixedList :: struct($T: typeid, $N: uint) {
+	data: [N]T,
+	size: _DAXA_FIXED_LIST_SIZE_T,
+}
+
+DAXA_SMALL_STRING_CAPACITY :: 63
+SmallString :: FixedList(byte, DAXA_SMALL_STRING_CAPACITY)
+
+ImageArraySlice :: struct
+{
+	mip_level: u32,
+	base_array_layer: u32,
+	layer_count: u32,
+}
+
+ImageMipArraySlice :: struct
+{
+	base_mip_level: u32,
+	level_count: u32,
+	base_array_layer: u32,
+	layer_count: u32,
+}
+
+RayTracingShaderBindingTable :: struct {
+	raygen_region: vk.StridedDeviceAddressRegionKHR,
+	miss_region: vk.StridedDeviceAddressRegionKHR,
+	hit_region: vk.StridedDeviceAddressRegionKHR,
+	callable_region: vk.StridedDeviceAddressRegionKHR,
+}
+
+MemoryBlockInfo :: struct
+{
+	requirements: vk.MemoryRequirements,
+	flags: MemoryFlags,
+}
+
+TimelineQueryPoolInfo :: struct
+{
+	query_count: u32,
+	name: SmallString,
 }

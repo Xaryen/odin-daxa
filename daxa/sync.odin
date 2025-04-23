@@ -24,3 +24,43 @@ foreign lib {
 	event_inc_refcnt                    :: proc(event: Event) -> u64 ---
 	event_dec_refcnt                    :: proc(event: Event) -> u64 ---
 }
+
+MemoryBarrierInfo :: struct {
+	src_access: Access,
+	dst_access: Access,
+}
+
+Access :: struct {
+	stages: vk.PipelineStageFlags2,
+	access_type: vk.AccessFlags2,
+}
+
+EventSignalInfo :: struct {
+	memory_barriers: ^MemoryBarrierInfo, //const * 
+	memory_barrier_count: u64,
+	image_memory_barriers: ^ImageMemoryBarrierInfo, //const * 
+	image_memory_barrier_count: u64,
+	event: ^Event,
+}
+
+BinarySemaphoreInfo :: struct
+{
+	name: SmallString,
+}
+
+TimelineSemaphoreInfo :: struct
+{
+	initial_value: u64,
+	name: SmallString,
+}
+
+EventInfo :: struct
+{
+	name: SmallString,
+}
+
+TimelinePair :: struct
+{
+	semaphore: TimelineSemaphore,
+	value: u64,
+}

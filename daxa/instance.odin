@@ -24,3 +24,22 @@ foreign lib {
 	instance_get_vk_instance         :: proc(instance: Instance) -> vk.Instance ---
 	instance_list_devices_properties :: proc(instance: Instance, properties: ^^DeviceProperties, property_count: ^u32) ---
 }
+
+DAXA_INSTANCE_FLAG_DEBUG_UTIL:                InstanceFlags : 0x1;
+DAXA_INSTANCE_FLAG_PARENT_MUST_OUTLIVE_CHILD: InstanceFlags : 0x2;
+
+InstanceInfo :: struct
+{
+	flags: InstanceFlags,
+	engine_name: SmallString,
+	app_name: SmallString,
+}
+
+// smallstring could be replaced by something with cstring?
+
+@rodata
+DEFAULT_INSTANCE_INFO := InstanceInfo{
+	flags = DAXA_INSTANCE_FLAG_DEBUG_UTIL,
+	engine_name = {},
+	app_name = {},
+}

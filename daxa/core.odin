@@ -4,11 +4,20 @@ import "core:c"
 
 _ :: c
 
+BufferId :: struct { value: u64 }
+ImageId  :: struct { value: u64 }
+TlasId   :: struct { value: u64 }
+BlasId   :: struct { value: u64 }
+
+ImageViewId  :: struct { value: u64 }
+SamplerId    :: struct { value: u64 }
+
 
 ImplCommandRecorder :: struct {}
-CommandRecorder :: struct {}
+CommandRecorder :: ^ImplCommandRecorder
+
 ImplExecutableCommandList :: struct {}
-ExecutableCommandList :: struct {}
+ExecutableCommandList :: ^ImplExecutableCommandList
 
 ImplInstance :: struct {}
 Instance     :: ^ImplInstance
@@ -16,63 +25,41 @@ Instance     :: ^ImplInstance
 ImplDevice :: struct {}
 Device     :: ^ImplDevice
 
+
 ImplRayTracingPipeline :: struct {}
+RayTracingPipeline :: ^ImplRayTracingPipeline
 
-RayTracingPipeline :: struct {}
 
-ImplComputePipeline :: struct {
-}
+ImplComputePipeline :: struct {}
+ComputePipeline :: ^ImplComputePipeline
 
-ComputePipeline :: struct {}
 
-ImplRasterPipeline :: struct {
-}
-
-RasterPipeline :: struct {}
+ImplRasterPipeline :: struct {}
+RasterPipeline :: ^ImplRasterPipeline
 
 ImplSwapchain :: struct {}
 Swapchain     :: ^ImplSwapchain
 
-ImplBinarySemaphore :: struct {
-}
 
-BinarySemaphore :: struct {}
+ImplBinarySemaphore :: struct {}
+BinarySemaphore :: ^ImplBinarySemaphore
 
-ImplTimelineSemaphore :: struct {
-}
+ImplTimelineSemaphore :: struct {}
+TimelineSemaphore :: ^ImplTimelineSemaphore
 
-TimelineSemaphore :: struct {}
 
-ImplEvent :: struct {
-}
+ImplEvent :: struct {}
+Event :: ^ImplEvent
 
-Event :: struct {}
 
-ImplTimelineQueryPool :: struct {
-}
+ImplTimelineQueryPool :: struct {}
+TimelineQueryPool :: ^ImplTimelineQueryPool
 
-TimelineQueryPool :: struct {}
 
-ImplMemoryBlock :: struct {
-}
-
-MemoryBlock :: struct {}
+ImplMemoryBlock :: struct {}
+MemoryBlock :: ^ImplMemoryBlock
 
 Flags :: u64
-
 Bool8 :: u8
-
 b32 :: u32
-
-//i32 :: i32
-
-//u32 :: u32
-
-//i64 :: i64
-
-//u64 :: u64
-
-//f32 :: f32
-
-//f64 :: f64
 

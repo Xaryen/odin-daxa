@@ -35,3 +35,16 @@ foreign lib {
 	swp_inc_refcnt                 :: proc(swapchain: Swapchain) -> u64 ---
 	swp_dec_refcnt                 :: proc(swapchain: Swapchain) -> u64 ---
 }
+
+SwapchainInfo :: struct
+{
+	native_window: NativeWindowHandle,
+	native_window_platform: NativeWindowPlatform,
+	surface_format_selector: proc(format: vk.Format) -> i32,
+	present_mode: vk.PresentModeKHR,
+	present_operation: VkSurfaceTransformFlagBitsKHR,
+	image_usage: ImageUsageFlags,
+	max_allowed_frames_in_flight: uint,
+	queue_family: QueueFamily,
+	name: SmallString,
+}

@@ -180,3 +180,292 @@ foreign lib {
 	// Returns previous ref count.
 	dvc_dec_refcnt :: proc(device: Device) -> u64 ---
 }
+
+Queue :: struct
+{
+	family: QueueFamily,
+	index: u32,
+}
+
+CommandSubmitInfo :: struct
+{
+	queue: Queue,
+	wait_stages: vk.PipelineStageFlags,
+	command_lists: ^ExecutableCommandList, //const *
+	command_list_count: u64,
+	wait_binary_semaphores: ^BinarySemaphore, //const *
+	wait_binary_semaphore_count: u64,
+	signal_binary_semaphores: ^BinarySemaphore, //const *
+	signal_binary_semaphore_count: u64,
+	wait_timeline_semaphores: ^TimelinePair, //const *
+	wait_timeline_semaphore_count: u64,
+	signal_timeline_semaphores: ^TimelinePair, //const *
+	signal_timeline_semaphore_count: u64,
+}
+
+PresentInfo :: struct
+{
+	wait_binary_semaphores: ^BinarySemaphore, //const * 
+	wait_binary_semaphore_count: u64,
+	swapchain: Swapchain,
+	queue: Queue,
+}
+
+DeviceInfo2 :: struct
+{
+	physical_device_index: u32,              // Index into list of devices returned from instance_list_devices_properties.
+	explicit_features: ExplicitFeatureFlags, // Explicit features must be manually enabled.
+	max_allowed_images: u32,
+	max_allowed_buffers: u32,
+	max_allowed_samplers: u32,
+	max_allowed_acceleration_structures: u32,
+	name: SmallString,
+}
+
+@rodata
+DEFAULT_DEVICE_INFO_2 := DeviceInfo2{
+	physical_device_index = max(u32),
+	explicit_features = .BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY,
+	max_allowed_images = 10000,
+	max_allowed_buffers = 10000,
+	max_allowed_samplers = 400,
+	max_allowed_acceleration_structures = 10000,
+	name = {},
+}
+
+// WARNING: DEPRECATED, use daxa_DeviceInfo2 instead!
+DeviceInfo :: struct
+{
+	selector: proc(properties: DeviceProperties) -> i32, //const *
+	flags: DeviceFlags,
+	max_allowed_images: u32,
+	max_allowed_buffers: u32,
+	max_allowed_samplers: u32,
+	max_allowed_acceleration_structures: u32,
+	name: SmallString,
+}
+
+DeviceProperties :: struct
+{
+	vulkan_api_version: u32,
+	driver_version: u32,
+	vendor_id: u32,
+	device_id: u32,
+	device_type: DeviceType,
+	device_name: [256]byte,
+	pipeline_cache_uuid: [16]byte,
+	limits: DeviceLimits,
+	mesh_shader_properties: Optional(MeshShaderProperties),
+	ray_tracing_pipeline_properties: Optional(RayTracingPipelineProperties),
+	acceleration_structure_properties: Optional(AccelerationStructureProperties),
+	ray_tracing_invocation_reorder_properties: Optional(RayTracingInvocationReorderProperties),
+	compute_queue_count: u32,
+	transfer_queue_count: u32,
+	implicit_features: ImplicitFeatureFlags,
+	explicit_features: ExplicitFeatureFlags,
+	missing_required_feature: MissingRequiredVkFeature,
+}
+
+DeviceLimits :: struct {
+	max_image_dimension1d: u32,
+	max_image_dimension2d: u32,
+	max_image_dimension3d: u32,
+	max_image_dimension_cube: u32,
+	max_image_array_layers: u32,
+	max_texel_buffer_elements: u32,
+	max_uniform_buffer_range: u32,
+	max_storage_buffer_range: u32,
+	max_push_constants_size: u32,
+	max_memory_allocation_count: u32,
+	max_sampler_allocation_count: u32,
+	buffer_image_granularity: u64,
+	sparse_address_space_size: u64,
+	max_bound_descriptor_sets: u32,
+	max_per_stage_descriptor_samplers: u32,
+	max_per_stage_descriptor_uniform_buffers: u32,
+	max_per_stage_descriptor_storage_buffers: u32,
+	max_per_stage_descriptor_sampled_images: u32,
+	max_per_stage_descriptor_storage_images: u32,
+	max_per_stage_descriptor_input_attachments: u32,
+	max_per_stage_resources: u32,
+	max_descriptor_set_samplers: u32,
+	max_descriptor_set_uniform_buffers: u32,
+	max_descriptor_set_uniform_buffers_dynamic: u32,
+	max_descriptor_set_storage_buffers: u32,
+	max_descriptor_set_storage_buffers_dynamic: u32,
+	max_descriptor_set_sampled_images: u32,
+	max_descriptor_set_storage_images: u32,
+	max_descriptor_set_input_attachments: u32,
+	max_vertex_input_attributes: u32,
+	max_vertex_input_bindings: u32,
+	max_vertex_input_attribute_offset: u32,
+	max_vertex_input_binding_stride: u32,
+	max_vertex_output_components: u32,
+	max_tessellation_generation_level: u32,
+	max_tessellation_patch_size: u32,
+	max_tessellation_control_per_vertex_input_components: u32,
+	max_tessellation_control_per_vertex_output_components: u32,
+	max_tessellation_control_per_patch_output_components: u32,
+	max_tessellation_control_total_output_components: u32,
+	max_tessellation_evaluation_input_components: u32,
+	max_tessellation_evaluation_output_components: u32,
+	max_geometry_shader_invocations: u32,
+	max_geometry_input_components: u32,
+	max_geometry_output_components: u32,
+	max_geometry_output_vertices: u32,
+	max_geometry_total_output_components: u32,
+	max_fragment_input_components: u32,
+	max_fragment_output_attachments: u32,
+	max_fragment_dual_src_attachments: u32,
+	max_fragment_combined_output_resources: u32,
+	max_compute_shared_memory_size: u32,
+	max_compute_work_group_count: [3]u32,
+	max_compute_work_group_invocations: u32,
+	max_compute_work_group_size: [3]u32,
+	sub_pixel_precision_bits: u32,
+	sub_texel_precision_bits: u32,
+	mipmap_precision_bits: u32,
+	max_draw_indexed_index_value: u32,
+	max_draw_indirect_count: u32,
+	max_sampler_lod_bias: f32,
+	max_sampler_anisotropy: f32,
+	max_viewports: u32,
+	max_viewport_dimensions: [2]u32,
+	viewport_bounds_range: [2]f32,
+	viewport_sub_pixel_bits: u32,
+	min_memory_map_alignment: uint,
+	min_texel_buffer_offset_alignment: u64,
+	min_uniform_buffer_offset_alignment: u64,
+	min_storage_buffer_offset_alignment: u64,
+	min_texel_offset: i32,
+	max_texel_offset: u32,
+	min_texel_gather_offset: i32,
+	max_texel_gather_offset: u32,
+	min_interpolation_offset: f32,
+	max_interpolation_offset: f32,
+	sub_pixel_interpolation_offset_bits: u32,
+	max_framebuffer_width: u32,
+	max_framebuffer_height: u32,
+	max_framebuffer_layers: u32,
+	framebuffer_color_sample_counts: u32,
+	framebuffer_depth_sample_counts: u32,
+	framebuffer_stencil_sample_counts: u32,
+	framebuffer_no_attachments_sample_counts: u32,
+	max_color_attachments: u32,
+	sampled_image_color_sample_counts: u32,
+	sampled_image_integer_sample_counts: u32,
+	sampled_image_depth_sample_counts: u32,
+	sampled_image_stencil_sample_counts: u32,
+	storage_image_sample_counts: u32,
+	max_sample_mask_words: u32,
+	timestamp_compute_and_graphics: u32,
+	timestamp_period: f32,
+	max_clip_distances: u32,
+	max_cull_distances: u32,
+	max_combined_clip_and_cull_distances: u32,
+	discrete_queue_priorities: u32,
+	point_size_range: [2]f32,
+	line_width_range: [2]f32,
+	point_size_granularity: f32,
+	line_width_granularity: f32,
+	strict_lines: u32,
+	standard_sample_locations: u32,
+	optimal_buffer_copy_offset_alignment: u64,
+	optimal_buffer_copy_row_pitch_alignment: u64,
+	non_coherent_atom_size: u64,
+}
+
+// Is NOT ABI Compatible with VkPhysicalDeviceMeshShaderPropertiesEXT!
+MeshShaderProperties :: struct {
+	max_task_work_group_total_count: u32,
+	max_task_work_group_count: [3]u32,
+	max_task_work_group_invocations: u32,
+	max_task_work_group_size: [3]u32,
+	max_task_payload_size: u32,
+	max_task_shared_memory_size: u32,
+	max_task_payload_and_shared_memory_size: u32,
+	max_mesh_work_group_total_count: u32,
+	max_mesh_work_group_count: [3]u32,
+	max_mesh_work_group_invocations: u32,
+	max_mesh_work_group_size: [3]u32,
+	max_mesh_shared_memory_size: u32,
+	max_mesh_payload_and_shared_memory_size: u32,
+	max_mesh_output_memory_size: u32,
+	max_mesh_payload_and_output_memory_size: u32,
+	max_mesh_output_components: u32,
+	max_mesh_output_vertices: u32,
+	max_mesh_output_primitives: u32,
+	max_mesh_output_layers: u32,
+	max_mesh_multiview_view_count: u32,
+	mesh_output_per_vertex_granularity: u32,
+	mesh_output_per_primitive_granularity: u32,
+	max_preferred_task_work_group_invocations: u32,
+	max_preferred_mesh_work_group_invocations: u32,
+	prefers_local_invocation_vertex_output: Bool8,
+	prefers_local_invocation_primitive_output: Bool8,
+	prefers_compact_vertex_output: Bool8,
+	prefers_compact_primitive_output: Bool8,
+}
+
+RayTracingPipelineProperties :: struct {
+	shader_group_handle_size: u32,
+	max_ray_recursion_depth: u32,
+	max_shader_group_stride: u32,
+	shader_group_base_alignment: u32,
+	shader_group_handle_capture_replay_size: u32,
+	max_ray_dispatch_invocation_count: u32,
+	shader_group_handle_alignment: u32,
+	max_ray_hit_attribute_size: u32,
+}
+
+AccelerationStructureProperties :: struct
+{
+	max_geometry_count: u64,
+	max_instance_count: u64,
+	max_primitive_count: u64,
+	max_per_stage_descriptor_acceleration_structures: u32,
+	max_per_stage_descriptor_update_after_bind_acceleration_structures: u32,
+	max_descriptor_set_acceleration_structures: u32,
+	max_descriptor_set_update_after_bind_acceleration_structures: u32,
+	min_acceleration_structure_scratch_offset_alignment: u32,
+}
+
+RayTracingInvocationReorderProperties :: struct
+{
+	invocation_reorder_mode: u32,
+}
+
+AccelerationStructureBuildSizesInfo :: struct
+{
+	acceleration_structure_size: u64,
+	update_scratch_size: u64,
+	build_scratch_size: u64,
+}
+
+MemoryBlockBufferInfo :: struct
+{
+	buffer_info: BufferInfo,
+	memory_block: ^MemoryBlock,
+	offset: uint,
+}
+
+MemoryBlockImageInfo :: struct
+{
+	image_info: ImageInfo,
+	memory_block: ^MemoryBlock,
+	offset: uint,
+}
+
+BufferTlasInfo :: struct
+{
+	tlas_info: TlasInfo,
+	buffer_id: BufferId,
+	offset: u64,
+}
+
+BufferBlasInfo :: struct
+{
+	blas_info: BlasInfo,
+	buffer_id: BufferId,
+	offset: u64,
+}

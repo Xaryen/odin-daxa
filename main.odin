@@ -17,12 +17,13 @@ Context :: struct {
 
 ctx := Context{}
 
-result :: proc(res: daxa.Result)
+result :: proc(res: daxa.Result, loc := #caller_location, exp := #caller_expression)
 {
     if res != .SUCCESS {
-        fmt.eprintf("DAXA ERROR: %d\n", res);
+        fmt.eprintf("DAXA ERROR: %d\n", res, loc, exp);
         assert(false, "result failed");
     }
+    log.info(res, loc, exp)
 }
 
 
@@ -105,60 +106,68 @@ main :: proc()
 
 	result(daxa.create_instance(&instance_info, &instance))
 
-	
 	device:      daxa.Device
 	device_info: daxa.DeviceInfo2
 	
 	device_info = daxa.DEFAULT_DEVICE_INFO_2
-	daxa.instance_choose_device(instance, .SWAPCHAIN, &device_info)
+	result(daxa.instance_choose_device(instance, .SWAPCHAIN, &device_info))
 	
-	fmt.println(device_info)
-
 	result(daxa.instance_create_device_2(instance, &device_info, &device))
 
-	daxa.dvc_dec_refcnt(device)
-	daxa.instance_dec_refcnt(instance)
-	
-	//swapchain:     daxa.Swapchain
-	//swapchaininfo := daxa.SwapchainInfo{
-	//	native_window           = get_native_handle(),
-	//	native_window_platform  = get_native_platform(),
-	//	surface_format_selector = proc(format: vk.Format) -> i32
-	//	{
-	//		#partial switch format {
-	//		case .R8G8B8A8_UINT: return 100
-	//		case: return daxa.default_format_selector(format)
-	//		}
-	//	},
-	//	present_mode            = .FIFO,
-	//	image_usage             = {.TRANSFER_DST},
-	//	name                    = to_smallstring("test swapchain"),
+	//daxa.dvc_dec_refcnt(device)
+	//daxa.instance_dec_refcnt(instance)
 
-	//}
-	//daxa.dvc_create_swapchain(device, &swapchaininfo, &swapchain)
+	swapchain:     daxa.Swapchain
+	swapchaininfo := daxa.SwapchainInfo{
+		native_window           = get_native_handle(),
+		native_window_platform  = get_native_platform(),
+		surface_format_selector = proc(format: vk.Format) -> i32
+		{
+			#partial switch format {
+			case .R8G8B8A8_UINT: return 100
+			case: return daxa.default_format_selector(format)
+			}
+		},
+		present_mode            = .FIFO,
+		image_usage             = {.TRANSFER_DST},
+		name                    = to_smallstring("test swapchain"),
+
+	}
+
+	result(daxa.dvc_create_swapchain(device, &swapchaininfo, &swapchain))
 
 	MyVertex :: struct{
 		position: [3]f32,
 		color: [3]f32,
 	};
 
-	//DAXA_DECL_BUFFER_PTR(MyVertex)
+	DAXA_DECL_BUFFER_PTR :: proc($T: typeid) -> struct{RWBufferPtr, BufferPtr: struct {value:T}}
+	{
+		ret: struct{
+			RWBufferPtr_MyVertex:  struct #align(4) {
+				value: T,
+			},
+		
+			BufferPtr_MyVertex: struct #align(4) {
+				value: T,
+			},
+		}
 
-	//struct MyPushConstant
-	//{
-	//daxa_BufferPtr(MyVertex) my_vertex_ptr;
-	//};
+		return ret
+	}
 
-	//fmt.println(device_info)
+	//buffer_ptr := typeid_of(DAXA_DECL_BUFFER_PTR(MyVertex))
 
-	//pipeline_manager = daxa.Pipeline
+	//MyPushConstant :: struct {
+	//	my_vertex_ptr: BufferPtr_MyVertex,
+	//}
 
 	i: int
-	//for !should_close() {
-	for i < 1000 {
+	for !should_close() {
+	//for i < 1000 {
 		i += 1
 		update()
 	}
 
-	fmt.println("finished running")
+	fmt.println("finished running", i)
 }
