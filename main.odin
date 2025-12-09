@@ -120,124 +120,7 @@ main :: proc()
 	simplest_test()
 	copy_test()
 
-	// i: int = -1
-	// for !should_close() {
-	// 	i += 1
-	// 	fmt.println("begin frame:", i)
-	// 	poll_events()
-
-
-
-	// 	if ctx.framebuffer_resized {
-	// 		result(daxa.swp_resize(ctx.swapchain))
-	// 		ctx.framebuffer_resized = false
-	// 	}
-
-	// 	swapchain_image: daxa.ImageId
-	// 	acq_result := daxa.swp_acquire_next_image(ctx.swapchain, &swapchain_image)
-	// 	// fmt.println(acq_result) // needs the "is_empty" check?
-	// 	assert(acq_result == .SUCCESS)
-	// 	assert(daxa.version_of_image(swapchain_image) != 0) //this is an empty check?
-
-
-	// 	swapchain_image_view := daxa.default_view(swapchain_image)
-	// 	swapchain_image_info: daxa.ImageViewInfo
-	// 	result(daxa.dvc_info_image_view(
-	// 		ctx.device,
-	// 		swapchain_image_view,
-	// 		&swapchain_image_info,
-	// 	))
-
-
-
-	// 	recorder: daxa.CommandRecorder
-	// 	result(daxa.dvc_create_command_recorder(
-	// 		ctx.device,
-	// 		&{ name = daxa.to_smallstring("my command recorder") },
-	// 		&recorder,
-	// 	))
-
-	// 	result(daxa.cmd_pipeline_image_barrier(
-	// 		cmd_enc = recorder,
-	// 		info    = &{
-	// 			dst_access       = daxa.ACCESS_TRANSFER_WRITE,
-	// 			image_id         = swapchain_image,
-	// 			layout_operation = .TO_GENERAL,
-	// 		}
-	// 	))
-
-	// 	result(daxa.cmd_clear_image(
-	// 		cmd_enc = recorder,
-	// 		info    = &{
-	// 			image_layout = .GENERAL,
-	// 			clear_value  = {
-	// 				values = { color = { float32 = [4]f32{1.0, 0.0, 1.0, 1.0} }},
-	// 				index  = 0,
-	// 			},
-	// 			image     = swapchain_image,
-	// 			dst_slice = swapchain_image_info.slice,
-	// 		}
-	// 	))
-
-	// 	result(daxa.cmd_pipeline_image_barrier(
-	// 		cmd_enc = recorder,
-	// 		info = &{
-	// 			src_access       = daxa.ACCESS_TRANSFER_WRITE,
-	// 			image_id         = swapchain_image,
-	// 			layout_operation = .TO_GENERAL,
-	// 		}
-	// 	))
-
-	// 	executable_commands: daxa.ExecutableCommandList
-	// 	result(daxa.cmd_complete_current_commands(recorder, &executable_commands))
-
-	// 	daxa.destroy_command_recorder(recorder)
-
-	// 	acquire_semaphore := daxa.swp_current_acquire_semaphore(ctx.swapchain)
-	// 	present_semaphore := daxa.swp_current_present_semaphore(ctx.swapchain)
-
-	// 	current_timeline_pair :: proc() -> daxa.TimelinePair {
-	// 		gpu_value := daxa.swp_gpu_timeline_semaphore(ctx.swapchain)^
-	// 		cpu_value := daxa.swp_current_cpu_timeline_value(ctx.swapchain)
-	// 		return {gpu_value, cpu_value}
-	// 	}
-
-	// 	timeline_pair := current_timeline_pair()
-	// 	result(daxa.dvc_submit(
-	// 		device = ctx.device,
-	// 		info = &{
-	// 			command_lists = &executable_commands,
-	// 			command_list_count = 1,
-	// 			wait_binary_semaphores = acquire_semaphore,
-	// 			wait_binary_semaphore_count = 1,
-	// 			signal_binary_semaphores = present_semaphore,
-	// 			signal_binary_semaphore_count = 1,
-	// 			signal_timeline_semaphores = &timeline_pair,
-	// 			signal_timeline_semaphore_count = 1,
-	// 			// wait_stages: vk.PipelineStageFlags,
-	// 			// wait_timeline_semaphores: ^TimelinePair, //const *
-	// 			// wait_timeline_semaphore_count: u64,
-	// 		},
-	// 	))
-
-	// 	daxa.executable_commands_dec_refcnt(executable_commands)
-
-	// 	result(daxa.dvc_present(
-	// 		device = ctx.device,
-	// 		info = &{
-	// 			wait_binary_semaphores      = present_semaphore,
-	// 			wait_binary_semaphore_count = 1,
-	// 			swapchain                   = ctx.swapchain,
-	// 			queue                       = {},
-	// 		}
-	// 	))
-	// 	// daxa.binary_semaphore_dec_refcnt(acquire_semaphore^)
-	// 	// daxa.binary_semaphore_dec_refcnt(present_semaphore^)
-
-	// 	result(daxa.dvc_collect_garbage(ctx.device))
-
-	// 	fmt.println("end frame:", i)
-	// }
+	pink_screen()
 
 	result(daxa.dvc_wait_idle(ctx.device))
 	result(daxa.dvc_collect_garbage(ctx.device))
@@ -245,6 +128,137 @@ main :: proc()
 	daxa.instance_dec_refcnt(ctx.instance)
 
 	fmt.println("finished running")
+}
+
+triangle :: proc() {
+	i: int = -1
+	for !should_close() {
+		i += 1
+		fmt.println("begin frame:", i)
+		poll_events()
+
+		fmt.println("end frame:", i)
+	}
+}
+
+pink_screen :: proc() {
+	i: int = -1
+	for !should_close() {
+		i += 1
+		fmt.println("begin frame:", i)
+		poll_events()
+
+
+		if ctx.framebuffer_resized {
+			result(daxa.swp_resize(ctx.swapchain))
+			ctx.framebuffer_resized = false
+		}
+
+		swapchain_image: daxa.ImageId
+		acq_result := daxa.swp_acquire_next_image(ctx.swapchain, &swapchain_image)
+		// fmt.println(acq_result) // needs the "is_empty" check?
+		assert(acq_result == .SUCCESS)
+		assert(daxa.version_of_image(swapchain_image) != 0) //this is an empty check?
+
+
+		swapchain_image_view := daxa.default_view(swapchain_image)
+		swapchain_image_info: daxa.ImageViewInfo
+		result(daxa.dvc_info_image_view(
+			ctx.device,
+			swapchain_image_view,
+			&swapchain_image_info,
+		))
+
+
+
+		recorder: daxa.CommandRecorder
+		result(daxa.dvc_create_command_recorder(
+			ctx.device,
+			&{ name = daxa.to_smallstring("my command recorder") },
+			&recorder,
+		))
+
+		result(daxa.cmd_pipeline_image_barrier(
+			cmd_enc = recorder,
+			info    = &{
+				dst_access       = daxa.ACCESS_TRANSFER_WRITE,
+				image_id         = swapchain_image,
+				layout_operation = .TO_GENERAL,
+			}
+		))
+
+		result(daxa.cmd_clear_image(
+			cmd_enc = recorder,
+			info    = &{
+				image_layout = .GENERAL,
+				clear_value  = {
+					values = { color = { float32 = [4]f32{1.0, 0.0, 1.0, 1.0} }},
+					index  = 0,
+				},
+				image     = swapchain_image,
+				dst_slice = swapchain_image_info.slice,
+			}
+		))
+
+		result(daxa.cmd_pipeline_image_barrier(
+			cmd_enc = recorder,
+			info = &{
+				src_access       = daxa.ACCESS_TRANSFER_WRITE,
+				image_id         = swapchain_image,
+				layout_operation = .TO_GENERAL,
+			}
+		))
+
+		executable_commands: daxa.ExecutableCommandList
+		result(daxa.cmd_complete_current_commands(recorder, &executable_commands))
+
+		daxa.destroy_command_recorder(recorder)
+
+		acquire_semaphore := daxa.swp_current_acquire_semaphore(ctx.swapchain)
+		present_semaphore := daxa.swp_current_present_semaphore(ctx.swapchain)
+
+		current_timeline_pair :: proc() -> daxa.TimelinePair {
+			gpu_value := daxa.swp_gpu_timeline_semaphore(ctx.swapchain)^
+			cpu_value := daxa.swp_current_cpu_timeline_value(ctx.swapchain)
+			return {gpu_value, cpu_value}
+		}
+
+		timeline_pair := current_timeline_pair()
+		result(daxa.dvc_submit(
+			device = ctx.device,
+			info = &{
+				command_lists = &executable_commands,
+				command_list_count = 1,
+				wait_binary_semaphores = acquire_semaphore,
+				wait_binary_semaphore_count = 1,
+				signal_binary_semaphores = present_semaphore,
+				signal_binary_semaphore_count = 1,
+				signal_timeline_semaphores = &timeline_pair,
+				signal_timeline_semaphore_count = 1,
+				// wait_stages: vk.PipelineStageFlags,
+				// wait_timeline_semaphores: ^TimelinePair, //const *
+				// wait_timeline_semaphore_count: u64,
+			},
+		))
+
+		daxa.executable_commands_dec_refcnt(executable_commands)
+
+		result(daxa.dvc_present(
+			device = ctx.device,
+			info = &{
+				wait_binary_semaphores      = present_semaphore,
+				wait_binary_semaphore_count = 1,
+				swapchain                   = ctx.swapchain,
+				queue                       = {},
+			}
+		))
+		// daxa.binary_semaphore_dec_refcnt(acquire_semaphore^)
+		// daxa.binary_semaphore_dec_refcnt(present_semaphore^)
+
+		result(daxa.dvc_collect_garbage(ctx.device))
+
+		fmt.println("end frame:", i)
+	}
 }
 
 simplest_test :: proc() {

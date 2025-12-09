@@ -1,0 +1,9 @@
+_old
+ref
+gen
+_del
+*.pdb
+*.rdi
+*.exe
+*.sublime-workspace
+*.sublime-project
