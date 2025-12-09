@@ -6,6 +6,36 @@ INSTANCE_FLAG_DEBUG_UTIL:                InstanceFlags : 0x1;
 INSTANCE_FLAG_PARENT_MUST_OUTLIVE_CHILD: InstanceFlags : 0x2;
 
 @rodata
+DEFAULT_RASTERIZATION_INFO := RasterizerInfo{
+	primitive_topology = .TRIANGLE_LIST,
+	primitive_restart_enable = false,
+	polygon_mode = .FILL,
+	face_culling = {},
+	front_face_winding = .CLOCKWISE,
+	depth_clamp_enable = 0,
+	rasterizer_discard_enable = 0,
+	depth_bias_enable = 0,
+	depth_bias_constant_factor = 0,
+	depth_bias_clamp = 0,
+	depth_bias_slope_factor = 0,
+	line_width = 1,
+	conservative_raster_info = {},
+	line_raster_info = {},
+	static_state_sample_count = {value = {._1}, has_value = 1},
+}
+
+@rodata
+DEFAULT_BLEND_INFO := BlendInfo{
+    src_color_blend_factor = .ONE,
+    dst_color_blend_factor = .ZERO,
+    color_blend_op = .ADD,
+    src_alpha_blend_factor = .ONE,
+    dst_alpha_blend_factor = .ZERO,
+    alpha_blend_op = .ADD,
+    color_write_mask = {.R, .G, .B, .A}
+};
+
+@rodata
 DEFAULT_IMAGE_INFO := ImageInfo{
 	flags             = 0,
 	dimensions        = 2,
@@ -77,6 +107,10 @@ QUEUE_COMPUTE_2  :: Queue{.COMPUTE, 2};
 QUEUE_COMPUTE_3  :: Queue{.COMPUTE, 3};
 QUEUE_TRANSFER_0 :: Queue{.TRANSFER, 0};
 QUEUE_TRANSFER_1 :: Queue{.TRANSFER, 1};
+
+MAX_PUSH_CONSTANT_WORD_SIZE :: (32);
+MAX_PUSH_CONSTANT_BYTE_SIZE :: (MAX_PUSH_CONSTANT_WORD_SIZE * 4);
+PIPELINE_LAYOUT_COUNT       :: (MAX_PUSH_CONSTANT_WORD_SIZE + 1);
 
 
 ImageUsageFlags :: bit_set[ImageUsageFlag; u32]
