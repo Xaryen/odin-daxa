@@ -483,6 +483,7 @@ copy_test :: proc() {
 		info = &{
 			buffer = device_local_buffer,
 			image = image_1,
+			image_slice = daxa.DEFAULT_IMAGE_ARRAY_SLICE,
 			image_layout = .GENERAL,
 			image_extent = {SIZE_X, SIZE_Y, SIZE_Z},
 		}
@@ -510,8 +511,10 @@ copy_test :: proc() {
 		info = &{
 			src_image = image_1,
 			src_image_layout = .GENERAL,
+			src_slice = daxa.DEFAULT_IMAGE_ARRAY_SLICE,
 			dst_image = image_2,
 			dst_image_layout = .GENERAL,
+			dst_slice = daxa.DEFAULT_IMAGE_ARRAY_SLICE,
 			extent = {SIZE_X, SIZE_Y, SIZE_Z},
 		}
 	)
@@ -538,6 +541,7 @@ copy_test :: proc() {
 		info = &{
 		image = image_2,
 		image_layout = .GENERAL,
+		image_slice = daxa.DEFAULT_IMAGE_ARRAY_SLICE,
 		image_extent = {SIZE_X, SIZE_Y, SIZE_Z},
 		buffer = device_local_buffer,
 	})
@@ -596,7 +600,7 @@ copy_test :: proc() {
 	fmt.println(query_results)
 
 	if ((query_results[1] != 0) && (query_results[3] != 0)) {
-		fmt.println("gpu execution took %v ms", f64(query_results[2] - query_results[0]) / 1_000_000)
+		fmt.printfln("gpu execution took %v ms", f64(query_results[2] - query_results[0]) / 1_000_000)
 	}
 
 	readback_data_ptr: rawptr
