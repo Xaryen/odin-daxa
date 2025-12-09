@@ -1,13 +1,11 @@
 package daxa
 
-import "core:c"
-import vk "vendor:vulkan"
-
-_ :: c
+foreign import lib "daxa.lib"
+_ :: lib
 
 // TODO:    Rename errors based on their fatality!
 //          DAXA_RESULT_FATAL_ERROR should be the prefix for unrecoverable errors.
-Result :: enum c.int {
+Result :: enum i32 {
 	SUCCESS                                              = 0,
 	NOT_READY                                            = 1,
 	TIMEOUT                                              = 2,
@@ -106,11 +104,11 @@ Result :: enum c.int {
 	INVALID_TLAS_ID                                      = 1073741876,
 	INVALID_BLAS_ID                                      = 1073741877,
 	INVALID_WITHOUT_ENABLING_RAY_TRACING                 = 1073741878,
-	NO_COMPUTE_PIPELINE_BOUND                            = 1073741879,
-	NO_RASTER_PIPELINE_BOUND                             = 1073741880,
-	NO_RAYTRACING_PIPELINE_BOUND                         = 1073741881,
-	NO_PIPELINE_BOUND                                    = 1073741882,
-	PUSHCONSTANT_RANGE_EXCEEDED                          = 1073741883,
+	NO_COMPUTE_PIPELINE_SET                              = 1073741879,
+	NO_RASTER_PIPELINE_SET                               = 1073741880,
+	NO_RAYTRACING_PIPELINE_SET                           = 1073741881,
+	NO_PIPELINE_SET                                      = 1073741882,
+	PUSH_CONSTANT_RANGE_EXCEEDED                         = 1073741883,
 	MESH_SHADER_NOT_DEVICE_ENABLED                       = 1073741884,
 	ERROR_COPY_OUT_OF_BOUNDS                             = 1073741885,
 	ERROR_NO_GRAPHICS_QUEUE_FOUND                        = 1073741886,
@@ -126,11 +124,13 @@ Result :: enum c.int {
 	ERROR_COMPUTE_FAMILY_CMD_ON_TRANSFER_QUEUE_RECORDER  = 1073741896,
 	ERROR_MAIN_FAMILY_CMD_ON_TRANSFER_QUEUE_RECORDER     = 1073741897,
 	ERROR_MAIN_FAMILY_CMD_ON_COMPUTE_QUEUE_RECORDER      = 1073741898,
+	ERROR_ZERO_REQUIRED_MEMORY_TYPE_BITS                 = 1073741899,
+	ERROR_ALLOC_FLAGS_MUST_BE_ZERO_ON_BLOCK_ALLOCATION   = 1073741900,
 	MAX_ENUM                                             = 2147483647,
 }
 
 // ImageLayout matches vulkan's image layouts
-ImageLayout :: enum c.int {
+ImageLayout :: enum i32 {
 	UNDEFINED            = 0,
 	GENERAL              = 1,
 	TRANSFER_SRC_OPTIMAL = 6,
@@ -141,82 +141,70 @@ ImageLayout :: enum c.int {
 	MAX_ENUM             = 2147483647,
 }
 
-MemoryFlags :: u32
+_DAXA_FIXED_LIST_SIZE_T  :: u8
+_DAXA_VARIANT_INDEX_TYPE :: u8
 
-QueueFamily :: enum c.int {
-	MAIN,
-	COMPUTE,
-	TRANSFER,
-	MAX_ENUM,
+SmallString :: struct {
+	data: [63]i8,
+	size: u8,
+}
+
+ImageMipArraySlice :: struct {
+	base_mip_level:   u32,
+	level_count:      u32,
+	base_array_layer: u32,
+	layer_count:      u32,
+}
+
+ImageArraySlice :: struct {
+	mip_level:        u32,
+	base_array_layer: u32,
+	layer_count:      u32,
+}
+
+ImageSlice :: struct {
+	mip_level:   u32,
+	array_layer: u32,
+}
+
+// MemoryFlags :: u32
+
+MemoryBlockInfo :: struct {
+	requirements: VkMemoryRequirements,
+	flags:        MemoryFlags,
 }
 
 @(default_calling_convention="c", link_prefix="daxa_")
 foreign lib {
-	memory_block_info                 :: proc(memory_block: MemoryBlock) -> ^MemoryBlockInfo ---
-	memory_block_inc_refcnt           :: proc(memory_block: MemoryBlock) -> u64 ---
-	memory_block_dec_refcnt           :: proc(memory_block: MemoryBlock) -> u64 ---
+	memory_block_info       :: proc(memory_block: MemoryBlock) -> ^MemoryBlockInfo ---
+	memory_block_inc_refcnt :: proc(memory_block: MemoryBlock) -> u64 ---
+	memory_block_dec_refcnt :: proc(memory_block: MemoryBlock) -> u64 ---
+}
+
+TimelineQueryPoolInfo :: struct {
+	query_count: u32,
+	name:        SmallString,
+}
+
+@(default_calling_convention="c", link_prefix="daxa_")
+foreign lib {
 	timeline_query_pool_info          :: proc(timeline_query_pool: TimelineQueryPool) -> ^TimelineQueryPoolInfo ---
 	timeline_query_pool_query_results :: proc(timeline_query_pool: TimelineQueryPool, start: u32, count: u32, out_results: ^u64) -> Result ---
 	timeline_query_pool_inc_refcnt    :: proc(timeline_query_pool: TimelineQueryPool) -> u64 ---
 	timeline_query_pool_dec_refcnt    :: proc(timeline_query_pool: TimelineQueryPool) -> u64 ---
 }
 
-_DAXA_FIXED_LIST_SIZE_T  :: u8
-_DAXA_VARIANT_INDEX_TYPE :: u8
-
-Variant :: struct($UNION: typeid) {
-	values: UNION, //raw union
-	index: _DAXA_VARIANT_INDEX_TYPE,
-}
-
-Optional :: struct($T: typeid) {
-	value: T,
-	has_value: Bool8,
-}
-
-SpanToConst :: struct($T: typeid) {
-	data: ^T, //const *
-	size: uint,
-}
-
-FixedList :: struct($T: typeid, $N: uint) {
-	data: [N]T,
-	size: _DAXA_FIXED_LIST_SIZE_T,
-}
-
-DAXA_SMALL_STRING_CAPACITY :: 63
-SmallString :: FixedList(byte, DAXA_SMALL_STRING_CAPACITY)
-
-ImageArraySlice :: struct
-{
-	mip_level: u32,
-	base_array_layer: u32,
-	layer_count: u32,
-}
-
-ImageMipArraySlice :: struct
-{
-	base_mip_level: u32,
-	level_count: u32,
-	base_array_layer: u32,
-	layer_count: u32,
+QueueFamily :: enum i32 {
+	MAIN     = 0,
+	COMPUTE  = 1,
+	TRANSFER = 2,
+	MAX_ENUM = 3,
 }
 
 RayTracingShaderBindingTable :: struct {
-	raygen_region: vk.StridedDeviceAddressRegionKHR,
-	miss_region: vk.StridedDeviceAddressRegionKHR,
-	hit_region: vk.StridedDeviceAddressRegionKHR,
-	callable_region: vk.StridedDeviceAddressRegionKHR,
+	raygen_region:   VkStridedDeviceAddressRegionKHR,
+	miss_region:     VkStridedDeviceAddressRegionKHR,
+	hit_region:      VkStridedDeviceAddressRegionKHR,
+	callable_region: VkStridedDeviceAddressRegionKHR,
 }
 
-MemoryBlockInfo :: struct
-{
-	requirements: vk.MemoryRequirements,
-	flags: MemoryFlags,
-}
-
-TimelineQueryPoolInfo :: struct
-{
-	query_count: u32,
-	name: SmallString,
-}
