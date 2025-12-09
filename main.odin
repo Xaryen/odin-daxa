@@ -3,8 +3,6 @@ package main
 import "base:runtime"
 import "core:strings"
 import "core:time"
-import win32 "core:sys/windows"
-// import "core:c/libc"
 import "core:fmt"
 import "core:log"
 import "vendor:glfw"
@@ -25,46 +23,39 @@ Program :: struct {
 ctx := Program{}
 
 
-result :: proc(res: daxa.Result, loc := #caller_location, exp := #caller_expression)
-{
-    if res > .NOT_READY {
+result :: proc(res: daxa.Result, loc := #caller_location, exp := #caller_expression) {
+	if res > .NOT_READY {
 	fmt.eprintfln("DAXA ERROR: %d %v %v", res, loc, exp)
 	assert(false, "result failed")
-    }
-    log.info(res, loc, exp)
+	}
+	log.info(res, loc, exp)
 }
 
-get_native_handle :: proc() -> daxa.NativeWindowHandle
-{
+get_native_handle :: proc() -> daxa.NativeWindowHandle {
 	return glfw.GetWin32Window(ctx.window)
 }
 
-get_native_platform :: proc() -> daxa.NativeWindowPlatform
-{
+get_native_platform :: proc() -> daxa.NativeWindowPlatform {
 	switch glfw.GetPlatform() {
 	case glfw.PLATFORM_WIN32: return daxa.NativeWindowPlatform.WIN32_API
 	case: panic("Unsupported Platform.")
 	}
 }
 
-set_mouse_capture :: #force_inline proc(should_capture: bool)
-{
+set_mouse_capture :: #force_inline proc(should_capture: bool) {
 	glfw.SetCursorPos(ctx.window, cast(f64)(ctx.w / 2.), cast(f64)(ctx.h / 2.))
 	glfw.SetInputMode(ctx.window, glfw.CURSOR, should_capture ? glfw.CURSOR_DISABLED : glfw.CURSOR_NORMAL)
 	glfw.SetInputMode(ctx.window, glfw.RAW_MOUSE_MOTION, i32(should_capture))
 }
 
-should_close :: #force_inline proc() -> bool
-{
+should_close :: #force_inline proc() -> bool {
 	return bool(glfw.WindowShouldClose(ctx.window))
 }
-    
-update :: #force_inline proc()
-{
+	
+poll_events :: #force_inline proc() {
 	glfw.PollEvents()
-	// glfw.SwapBuffers(ctx.window)
 }
-    
+	
 glfw_error_callback :: proc "c" (code: i32, description: cstring) {
 	context = ctx.ctx
 	log.errorf("glfw: %i: %s", code, description)
@@ -117,11 +108,11 @@ main :: proc()
 		// 	case: return daxa.default_format_selector(format)
 		// 	}
 		// },
-		present_mode = .FIFO,
-		present_operation = {.IDENTITY},
-		image_usage  = {.TRANSFER_DST},
+		present_mode                 = .MAILBOX,
+		present_operation            = {.IDENTITY},
+		image_usage                  = {.TRANSFER_DST},
 		max_allowed_frames_in_flight = 2,
-		name         = daxa.to_smallstring("test swapchain"),
+		name                         = daxa.to_smallstring("test swapchain"),
 	}
 
 	result(daxa.dvc_create_swapchain(ctx.device, &swapchaininfo, &ctx.swapchain))
@@ -129,124 +120,124 @@ main :: proc()
 	simplest_test()
 	copy_test()
 
-	i: int = -1
-	for !should_close() {
-
-		i += 1
-		fmt.println("begin frame:", i)
-
-		update()
+	// i: int = -1
+	// for !should_close() {
+	// 	i += 1
+	// 	fmt.println("begin frame:", i)
+	// 	poll_events()
 
 
-		if ctx.framebuffer_resized {
-            daxa.swp_resize(ctx.swapchain)
-            ctx.framebuffer_resized = false
-        }
 
-        swapchain_image: daxa.ImageId
-        result(daxa.swp_acquire_next_image(ctx.swapchain, &swapchain_image))
-        fmt.println(swapchain_image) // needs the "is_empty" check?
+	// 	if ctx.framebuffer_resized {
+	// 		result(daxa.swp_resize(ctx.swapchain))
+	// 		ctx.framebuffer_resized = false
+	// 	}
 
-        swapchain_image_view: daxa.ImageViewId
-        result(daxa.dvc_create_image_view(
-			ctx.device,
-			&daxa.DEFAULT_IMAGE_VIEW_INFO,
-			&swapchain_image_view,
-		))
+	// 	swapchain_image: daxa.ImageId
+	// 	acq_result := daxa.swp_acquire_next_image(ctx.swapchain, &swapchain_image)
+	// 	// fmt.println(acq_result) // needs the "is_empty" check?
+	// 	assert(acq_result == .SUCCESS)
+	// 	assert(daxa.version_of_image(swapchain_image) != 0) //this is an empty check?
 
-        swapchain_image_info: daxa.ImageViewInfo
-        result(daxa.dvc_info_image_view(
-        	ctx.device,
-        	swapchain_image_view,
-        	&swapchain_image_info,
-        ))
 
-		swapchain_image_full_slice := swapchain_image_info.slice
+	// 	swapchain_image_view := daxa.default_view(swapchain_image)
+	// 	swapchain_image_info: daxa.ImageViewInfo
+	// 	result(daxa.dvc_info_image_view(
+	// 		ctx.device,
+	// 		swapchain_image_view,
+	// 		&swapchain_image_info,
+	// 	))
 
-		recorder: daxa.CommandRecorder
-        result(daxa.dvc_create_command_recorder(
-        	ctx.device,
-        	&{ name = daxa.to_smallstring("my command recorder") },
-        	&recorder,
-        ))
 
-        result(daxa.cmd_pipeline_image_barrier(
-			cmd_enc = recorder,
-        	info = &{
-	            dst_access = daxa.ACCESS_TRANSFER_WRITE,
-	            image_id = swapchain_image,
-	            layout_operation = .TO_GENERAL,
-        	}
-        ))
 
-        result(daxa.cmd_clear_image(
-        	cmd_enc = recorder,
-        	info = &{
-        		image_layout = .GENERAL,
-            	clear_value = {
-            		values = { color = { float32 = [4]f32{1.0, 0.0, 1.0, 1.0} }},
-            		index  = 0,
-            	},
-            	image     = swapchain_image,
-            	dst_slice = swapchain_image_full_slice,
-        	}
-        ))
+	// 	recorder: daxa.CommandRecorder
+	// 	result(daxa.dvc_create_command_recorder(
+	// 		ctx.device,
+	// 		&{ name = daxa.to_smallstring("my command recorder") },
+	// 		&recorder,
+	// 	))
 
-        result(daxa.cmd_pipeline_image_barrier(
-        	cmd_enc = recorder,
-        	info = &{
-            	src_access = daxa.ACCESS_TRANSFER_WRITE,
-            	image_id = swapchain_image,
-            	layout_operation = .TO_GENERAL,
-       		}
-        ))
+	// 	result(daxa.cmd_pipeline_image_barrier(
+	// 		cmd_enc = recorder,
+	// 		info    = &{
+	// 			dst_access       = daxa.ACCESS_TRANSFER_WRITE,
+	// 			image_id         = swapchain_image,
+	// 			layout_operation = .TO_GENERAL,
+	// 		}
+	// 	))
 
-        executable_commands: daxa.ExecutableCommandList
-		result(daxa.cmd_complete_current_commands(recorder, &executable_commands))
+	// 	result(daxa.cmd_clear_image(
+	// 		cmd_enc = recorder,
+	// 		info    = &{
+	// 			image_layout = .GENERAL,
+	// 			clear_value  = {
+	// 				values = { color = { float32 = [4]f32{1.0, 0.0, 1.0, 1.0} }},
+	// 				index  = 0,
+	// 			},
+	// 			image     = swapchain_image,
+	// 			dst_slice = swapchain_image_info.slice,
+	// 		}
+	// 	))
 
-		daxa.destroy_command_recorder(recorder)
+	// 	result(daxa.cmd_pipeline_image_barrier(
+	// 		cmd_enc = recorder,
+	// 		info = &{
+	// 			src_access       = daxa.ACCESS_TRANSFER_WRITE,
+	// 			image_id         = swapchain_image,
+	// 			layout_operation = .TO_GENERAL,
+	// 		}
+	// 	))
 
-		acquire_semaphore := daxa.swp_current_acquire_semaphore(ctx.swapchain)
-		present_semaphore := daxa.swp_current_present_semaphore(ctx.swapchain)
+	// 	executable_commands: daxa.ExecutableCommandList
+	// 	result(daxa.cmd_complete_current_commands(recorder, &executable_commands))
 
-	    current_timeline_pair :: proc() -> daxa.TimelinePair {
-	        gpu_value := daxa.swp_gpu_timeline_semaphore(ctx.swapchain)^
-	        cpu_value := daxa.swp_current_cpu_timeline_value(ctx.swapchain)
-	        return {gpu_value, cpu_value}
-	    }
+	// 	daxa.destroy_command_recorder(recorder)
 
-	    timeline_pair := current_timeline_pair()
-		result(daxa.dvc_submit(
-			device = ctx.device,
-			info = &{
-            	command_lists = &executable_commands,
-				command_list_count = 1,
-            	wait_binary_semaphores = acquire_semaphore,
-				wait_binary_semaphore_count = 1,
-            	signal_binary_semaphores = present_semaphore,
-				signal_binary_semaphore_count = 1,
-            	signal_timeline_semaphores = &timeline_pair,
-				signal_timeline_semaphore_count = 1,
-				// wait_stages: vk.PipelineStageFlags,
-				// wait_timeline_semaphores: ^TimelinePair, //const *
-				// wait_timeline_semaphore_count: u64,
-        	},
-        ))
+	// 	acquire_semaphore := daxa.swp_current_acquire_semaphore(ctx.swapchain)
+	// 	present_semaphore := daxa.swp_current_present_semaphore(ctx.swapchain)
 
-        result(daxa.dvc_present(
-        	device = ctx.device,
-        	info = &{
-        		wait_binary_semaphores      = present_semaphore,
-				wait_binary_semaphore_count = 1,
-				swapchain                   = ctx.swapchain,
-				queue                       = {},
-        	}
-        ))
+	// 	current_timeline_pair :: proc() -> daxa.TimelinePair {
+	// 		gpu_value := daxa.swp_gpu_timeline_semaphore(ctx.swapchain)^
+	// 		cpu_value := daxa.swp_current_cpu_timeline_value(ctx.swapchain)
+	// 		return {gpu_value, cpu_value}
+	// 	}
 
-        result(daxa.dvc_collect_garbage(ctx.device))
+	// 	timeline_pair := current_timeline_pair()
+	// 	result(daxa.dvc_submit(
+	// 		device = ctx.device,
+	// 		info = &{
+	// 			command_lists = &executable_commands,
+	// 			command_list_count = 1,
+	// 			wait_binary_semaphores = acquire_semaphore,
+	// 			wait_binary_semaphore_count = 1,
+	// 			signal_binary_semaphores = present_semaphore,
+	// 			signal_binary_semaphore_count = 1,
+	// 			signal_timeline_semaphores = &timeline_pair,
+	// 			signal_timeline_semaphore_count = 1,
+	// 			// wait_stages: vk.PipelineStageFlags,
+	// 			// wait_timeline_semaphores: ^TimelinePair, //const *
+	// 			// wait_timeline_semaphore_count: u64,
+	// 		},
+	// 	))
 
-        fmt.println("end frame:", i)
-	}
+	// 	daxa.executable_commands_dec_refcnt(executable_commands)
+
+	// 	result(daxa.dvc_present(
+	// 		device = ctx.device,
+	// 		info = &{
+	// 			wait_binary_semaphores      = present_semaphore,
+	// 			wait_binary_semaphore_count = 1,
+	// 			swapchain                   = ctx.swapchain,
+	// 			queue                       = {},
+	// 		}
+	// 	))
+	// 	// daxa.binary_semaphore_dec_refcnt(acquire_semaphore^)
+	// 	// daxa.binary_semaphore_dec_refcnt(present_semaphore^)
+
+	// 	result(daxa.dvc_collect_garbage(ctx.device))
+
+	// 	fmt.println("end frame:", i)
+	// }
 
 	result(daxa.dvc_wait_idle(ctx.device))
 	result(daxa.dvc_collect_garbage(ctx.device))
@@ -294,7 +285,6 @@ copy_test :: proc() {
 	SIZE_Z :: 3
 
 	get_printable_char_buffer :: proc(in_data: $T/[$SZ][$SY][$SX][4]f32) -> [dynamic]byte {
-	
 		data: [dynamic]byte
 
 		pixel_lit          := `\033[48;2;000;000;000m  `
@@ -317,17 +307,17 @@ copy_test :: proc() {
 					g := cast(u8)(in_data[zi][yi][xi][1] * 255.0)
 					b := cast(u8)(in_data[zi][yi][xi][2] * 255.0)
 					next_pixel := pixel
-					next_pixel[7 + 0 * 4 + 0] = ((u8)('0') + (r / 100))
-					next_pixel[7 + 0 * 4 + 1] = ((u8)('0') + (r % 100) / 10)
-					next_pixel[7 + 0 * 4 + 2] = ((u8)('0') + (r % 10))
-					next_pixel[7 + 1 * 4 + 0] = ((u8)('0') + (g / 100))
-					next_pixel[7 + 1 * 4 + 1] = ((u8)('0') + (g % 100) / 10)
-					next_pixel[7 + 1 * 4 + 2] = ((u8)('0') + (g % 10))
-					next_pixel[7 + 2 * 4 + 0] = ((u8)('0') + (b / 100))
-					next_pixel[7 + 2 * 4 + 1] = ((u8)('0') + (b % 100) / 10)
-					next_pixel[7 + 2 * 4 + 2] = ((u8)('0') + (b % 10))
-			                copy(data[output_index:], next_pixel)
-			                output_index += len(pixel)
+					next_pixel[7 + 0 * 4 + 0] = (u8('0') + (r / 100))
+					next_pixel[7 + 0 * 4 + 1] = (u8('0') + (r % 100) / 10)
+					next_pixel[7 + 0 * 4 + 2] = (u8('0') + (r % 10))
+					next_pixel[7 + 1 * 4 + 0] = (u8('0') + (g / 100))
+					next_pixel[7 + 1 * 4 + 1] = (u8('0') + (g % 100) / 10)
+					next_pixel[7 + 1 * 4 + 2] = (u8('0') + (g % 10))
+					next_pixel[7 + 2 * 4 + 0] = (u8('0') + (b / 100))
+					next_pixel[7 + 2 * 4 + 1] = (u8('0') + (b % 100) / 10)
+					next_pixel[7 + 2 * 4 + 2] = (u8('0') + (b % 10))
+					copy(data[output_index:], next_pixel)
+					output_index += len(pixel)
 				}
 				copy(data[output_index:], line_terminator)
 				output_index += len(line_terminator)
