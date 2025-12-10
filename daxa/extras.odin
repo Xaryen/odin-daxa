@@ -2,8 +2,8 @@ package daxa
 
 import sa "core:container/small_array"
 
-INSTANCE_FLAG_DEBUG_UTIL:                InstanceFlags : 0x1;
-INSTANCE_FLAG_PARENT_MUST_OUTLIVE_CHILD: InstanceFlags : 0x2;
+INSTANCE_FLAG_DEBUG_UTIL:                InstanceFlags : 0x1
+INSTANCE_FLAG_PARENT_MUST_OUTLIVE_CHILD: InstanceFlags : 0x2
 
 @rodata
 DEFAULT_RASTERIZATION_INFO := RasterizerInfo{
@@ -26,14 +26,14 @@ DEFAULT_RASTERIZATION_INFO := RasterizerInfo{
 
 @rodata
 DEFAULT_BLEND_INFO := BlendInfo{
-    src_color_blend_factor = .ONE,
-    dst_color_blend_factor = .ZERO,
-    color_blend_op = .ADD,
-    src_alpha_blend_factor = .ONE,
-    dst_alpha_blend_factor = .ZERO,
-    alpha_blend_op = .ADD,
-    color_write_mask = {.R, .G, .B, .A}
-};
+	src_color_blend_factor = .ONE,
+	dst_color_blend_factor = .ZERO,
+	color_blend_op = .ADD,
+	src_alpha_blend_factor = .ONE,
+	dst_alpha_blend_factor = .ZERO,
+	alpha_blend_op = .ADD,
+	color_write_mask = {.R, .G, .B, .A}
+}
 
 @rodata
 DEFAULT_IMAGE_INFO := ImageInfo{
@@ -65,7 +65,7 @@ DEFAULT_IMAGE_VIEW_INFO := ImageViewInfo{
     image  = {},
     slice  = {},
     name   = {},
-};
+}
 
 @rodata
 DEFAULT_INSTANCE_INFO := InstanceInfo{
@@ -100,17 +100,17 @@ u_small_string :: struct {
 
 VmaAllocation_T :: struct{}
 
-QUEUE_MAIN       :: Queue{.MAIN, 0};
-QUEUE_COMPUTE_0  :: Queue{.COMPUTE, 0};
-QUEUE_COMPUTE_1  :: Queue{.COMPUTE, 1};
-QUEUE_COMPUTE_2  :: Queue{.COMPUTE, 2};
-QUEUE_COMPUTE_3  :: Queue{.COMPUTE, 3};
-QUEUE_TRANSFER_0 :: Queue{.TRANSFER, 0};
-QUEUE_TRANSFER_1 :: Queue{.TRANSFER, 1};
+QUEUE_MAIN       :: Queue{.MAIN, 0}
+QUEUE_COMPUTE_0  :: Queue{.COMPUTE, 0}
+QUEUE_COMPUTE_1  :: Queue{.COMPUTE, 1}
+QUEUE_COMPUTE_2  :: Queue{.COMPUTE, 2}
+QUEUE_COMPUTE_3  :: Queue{.COMPUTE, 3}
+QUEUE_TRANSFER_0 :: Queue{.TRANSFER, 0}
+QUEUE_TRANSFER_1 :: Queue{.TRANSFER, 1}
 
-MAX_PUSH_CONSTANT_WORD_SIZE :: (32);
-MAX_PUSH_CONSTANT_BYTE_SIZE :: (MAX_PUSH_CONSTANT_WORD_SIZE * 4);
-PIPELINE_LAYOUT_COUNT       :: (MAX_PUSH_CONSTANT_WORD_SIZE + 1);
+MAX_PUSH_CONSTANT_WORD_SIZE :: (32)
+MAX_PUSH_CONSTANT_BYTE_SIZE :: (MAX_PUSH_CONSTANT_WORD_SIZE * 4)
+PIPELINE_LAYOUT_COUNT       :: (MAX_PUSH_CONSTANT_WORD_SIZE + 1)
 
 
 ImageUsageFlags :: bit_set[ImageUsageFlag; u32]
