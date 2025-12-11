@@ -1,5 +1,7 @@
 package daxa
 
+import vk "vendor:vulkan"
+
 foreign import lib "daxa.lib"
 _ :: lib
 
@@ -167,10 +169,8 @@ ImageSlice :: struct {
 	array_layer: u32,
 }
 
-// MemoryFlags :: u32
-
 MemoryBlockInfo :: struct {
-	requirements: VkMemoryRequirements,
+	requirements: vk.MemoryRequirements,
 	flags:        MemoryFlags,
 }
 
@@ -202,9 +202,9 @@ QueueFamily :: enum i32 {
 }
 
 RayTracingShaderBindingTable :: struct {
-	raygen_region:   VkStridedDeviceAddressRegionKHR,
-	miss_region:     VkStridedDeviceAddressRegionKHR,
-	hit_region:      VkStridedDeviceAddressRegionKHR,
-	callable_region: VkStridedDeviceAddressRegionKHR,
+	raygen_region:   vk.StridedDeviceAddressRegionKHR,
+	miss_region:     vk.StridedDeviceAddressRegionKHR,
+	hit_region:      vk.StridedDeviceAddressRegionKHR,
+	callable_region: vk.StridedDeviceAddressRegionKHR,
 }
 

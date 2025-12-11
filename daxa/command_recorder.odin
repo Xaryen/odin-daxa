@@ -1,6 +1,8 @@
 package daxa
 
 import "core:c"
+import vk "vendor:vulkan"
+
 
 foreign import lib "daxa.lib"
 _ :: lib
@@ -23,10 +25,10 @@ ImageBlitInfo :: struct {
 	dst_image:        ImageId,
 	dst_image_layout: ImageLayout,
 	src_slice:        ImageArraySlice,
-	src_offsets:      [2]VkOffset3D,
+	src_offsets:      [2]vk.Offset3D,
 	dst_slice:        ImageArraySlice,
-	dst_offsets:      [2]VkOffset3D,
-	filter:           VkFilter,
+	dst_offsets:      [2]vk.Offset3D,
+	filter:           vk.Filter,
 }
 
 BufferCopyInfo :: struct {
@@ -43,16 +45,16 @@ BufferImageCopyInfo :: struct {
 	image:         ImageId,
 	image_layout:  ImageLayout,
 	image_slice:   ImageArraySlice,
-	image_offset:  VkOffset3D,
-	image_extent:  VkExtent3D,
+	image_offset:  vk.Offset3D,
+	image_extent:  vk.Offset3D,
 }
 
 ImageBufferCopyInfo :: struct {
 	image:         ImageId,
 	image_layout:  ImageLayout,
 	image_slice:   ImageArraySlice,
-	image_offset:  VkOffset3D,
-	image_extent:  VkExtent3D,
+	image_offset:  vk.Offset3D,
+	image_extent:  vk.Offset3D,
 	buffer:        BufferId,
 	buffer_offset: c.size_t,
 }
@@ -63,10 +65,10 @@ ImageCopyInfo :: struct {
 	dst_image:        ImageId,
 	dst_image_layout: ImageLayout,
 	src_slice:        ImageArraySlice,
-	src_offset:       VkOffset3D,
+	src_offset:       vk.Offset3D,
 	dst_slice:        ImageArraySlice,
-	dst_offset:       VkOffset3D,
-	extent:           VkExtent3D,
+	dst_offset:       vk.Offset3D,
+	extent:           vk.Offset3D,
 }
 
 ImageClearInfo :: struct {
@@ -75,7 +77,7 @@ ImageClearInfo :: struct {
 	// Make sure this stays abi compatible with daxa::ClearValue
 	clear_value: struct {
 		// Make sure this stays abi compatible with daxa::ClearValue
-		values: VkClearValue,
+		values: vk.ClearValue,
 
 		// Make sure this stays abi compatible with daxa::ClearValue
 		index: u8,
@@ -94,7 +96,7 @@ BufferClearInfo :: struct {
 }
 
 AttachmentResolveInfo :: struct {
-	mode:   VkResolveModeFlagBits,
+	mode:   vk.ResolveModeFlags,
 	image:  ImageViewId,
 	layout: ImageLayout,
 }
@@ -102,11 +104,11 @@ AttachmentResolveInfo :: struct {
 RenderAttachmentInfo :: struct {
 	image_view: ImageViewId,
 	layout:     ImageLayout,
-	load_op:    VkAttachmentLoadOp,
-	store_op:   VkAttachmentStoreOp,
+	load_op:    vk.AttachmentLoadOp,
+	store_op:   vk.AttachmentStoreOp,
 
 	clear_value: struct {
-		values: VkClearValue,
+		values: vk.ClearValue,
 		index:  u8,
 	},
 
@@ -132,7 +134,7 @@ RenderPassBeginInfo :: struct {
 		has_value: Bool8,
 	},
 
-	render_area: VkRect2D,
+	render_area: vk.Rect2D,
 }
 
 TraceRaysInfo :: struct {
@@ -217,7 +219,7 @@ DrawIndirectCountInfo :: struct {
 
 ResetEventsInfo :: struct {
 	event: ^Event,
-	stage: VkPipelineStageFlags,
+	stage: vk.PipelineStageFlags,
 }
 
 WaitEventsInfo :: struct {
@@ -227,7 +229,7 @@ WaitEventsInfo :: struct {
 
 WriteTimestampInfo :: struct {
 	query_pool:     ^TimelineQueryPool,
-	pipeline_stage: VkPipelineStageFlags2,
+	pipeline_stage: vk.PipelineStageFlags2,
 	query_index:    u32,
 }
 
@@ -244,7 +246,7 @@ CommandLabelInfo :: struct {
 
 ResetEventInfo :: struct {
 	barrier:     ^Event,
-	stage_masks: VkPipelineStageFlags,
+	stage_masks: vk.PipelineStageFlags,
 }
 
 DepthBiasInfo :: struct {
@@ -256,7 +258,7 @@ DepthBiasInfo :: struct {
 SetIndexBufferInfo :: struct {
 	buffer:     BufferId,
 	offset:     c.size_t,
-	index_type: VkIndexType,
+	index_type: vk.IndexType,
 }
 
 BuildAccelerationStucturesInfo :: struct {
@@ -268,7 +270,7 @@ BuildAccelerationStucturesInfo :: struct {
 
 @(default_calling_convention="c", link_prefix="daxa_")
 foreign lib {
-	cmd_set_rasterization_samples     :: proc(cmd_enc: CommandRecorder, samples: VkSampleCountFlagBits) -> Result ---
+	cmd_set_rasterization_samples     :: proc(cmd_enc: CommandRecorder, samples: vk.SampleCountFlags) -> Result ---
 	cmd_copy_buffer_to_buffer         :: proc(cmd_enc: CommandRecorder, info: ^BufferCopyInfo) -> Result ---
 	cmd_copy_buffer_to_image          :: proc(cmd_enc: CommandRecorder, info: ^BufferImageCopyInfo) -> Result ---
 	cmd_copy_image_to_buffer          :: proc(cmd_enc: CommandRecorder, info: ^ImageBufferCopyInfo) -> Result ---
@@ -328,8 +330,8 @@ foreign lib {
 	/// @brief  Ends a renderpass scope akin to the dynamic rendering feature in vulkan.
 	///         Between the begin and end renderpass commands, the renderpass persists and draw-calls can be recorded.
 	cmd_end_renderpass                 :: proc(cmd_enc: CommandRecorder) ---
-	cmd_set_viewport                   :: proc(cmd_enc: CommandRecorder, info: ^VkViewport) ---
-	cmd_set_scissor                    :: proc(cmd_enc: CommandRecorder, info: ^VkRect2D) ---
+	cmd_set_viewport                   :: proc(cmd_enc: CommandRecorder, info: ^vk.Viewport) ---
+	cmd_set_scissor                    :: proc(cmd_enc: CommandRecorder, info: ^vk.Rect2D) ---
 	cmd_set_depth_bias                 :: proc(cmd_enc: CommandRecorder, info: ^DepthBiasInfo) ---
 	cmd_set_index_buffer               :: proc(cmd_enc: CommandRecorder, info: ^SetIndexBufferInfo) -> Result ---
 	cmd_draw                           :: proc(cmd_enc: CommandRecorder, info: ^DrawInfo) ---
@@ -349,8 +351,8 @@ foreign lib {
 	cmd_flush_barriers             :: proc(cmd_enc: CommandRecorder) ---
 	cmd_complete_current_commands  :: proc(cmd_enc: CommandRecorder, out_executable_cmds: ^ExecutableCommandList) -> Result ---
 	cmd_info                       :: proc(cmd_enc: CommandRecorder) -> ^CommandRecorderInfo ---
-	cmd_get_vk_command_buffer      :: proc(cmd_enc: CommandRecorder) -> VkCommandBuffer ---
-	cmd_get_vk_command_pool        :: proc(cmd_enc: CommandRecorder) -> VkCommandPool ---
+	cmd_get_vk_command_buffer      :: proc(cmd_enc: CommandRecorder) -> vk.CommandBuffer ---
+	cmd_get_vk_command_pool        :: proc(cmd_enc: CommandRecorder) -> vk.CommandPool ---
 	destroy_command_recorder       :: proc(cmd_enc: CommandRecorder) ---
 	executable_commands_inc_refcnt :: proc(executable_commands: ExecutableCommandList) -> u64 ---
 	executable_commands_dec_refcnt :: proc(executable_commands: ExecutableCommandList) -> u64 ---

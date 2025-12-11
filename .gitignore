@@ -1,8 +1,8 @@
-_old
-ref
-gen
-ignore
 _del
+_old
+gen
+include
+ref
 *.pdb
 *.rdi
 *.exe

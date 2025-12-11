@@ -1,11 +1,13 @@
 package daxa
 
+import vk "vendor:vulkan"
+
 foreign import lib "daxa.lib"
 _ :: lib
 
 Access :: struct {
-	stages:      VkPipelineStageFlags2,
-	access_type: VkAccessFlags2,
+	stages:      vk.PipelineStageFlags2,
+	access_type: vk.AccessFlags2,
 }
 
 BarrierInfo :: struct {
@@ -46,7 +48,7 @@ BinarySemaphoreInfo :: struct {
 @(default_calling_convention="c", link_prefix="daxa_")
 foreign lib {
 	binary_semaphore_info             :: proc(binary_semaphore: BinarySemaphore) -> ^BinarySemaphoreInfo ---
-	binary_semaphore_get_vk_semaphore :: proc(binary_semaphore: BinarySemaphore) -> VkSemaphore ---
+	binary_semaphore_get_vk_semaphore :: proc(binary_semaphore: BinarySemaphore) -> vk.Semaphore ---
 	binary_semaphore_inc_refcnt       :: proc(binary_semaphore: BinarySemaphore) -> u64 ---
 	binary_semaphore_dec_refcnt       :: proc(binary_semaphore: BinarySemaphore) -> u64 ---
 }
@@ -62,7 +64,7 @@ foreign lib {
 	timeline_semaphore_get_value        :: proc(timeline_semaphore: TimelineSemaphore, out_value: ^u64) -> Result ---
 	timeline_semaphore_set_value        :: proc(timeline_semaphore: TimelineSemaphore, value: u64) -> Result ---
 	timeline_semaphore_wait_for_value   :: proc(timeline_semaphore: TimelineSemaphore, value: u64, timeout: u64) -> Result ---
-	timeline_semaphore_get_vk_semaphore :: proc(timeline_semaphore: TimelineSemaphore) -> VkSemaphore ---
+	timeline_semaphore_get_vk_semaphore :: proc(timeline_semaphore: TimelineSemaphore) -> vk.Semaphore ---
 	timeline_semaphore_inc_refcnt       :: proc(timeline_semaphore: TimelineSemaphore) -> u64 ---
 	timeline_semaphore_dec_refcnt       :: proc(timeline_semaphore: TimelineSemaphore) -> u64 ---
 }

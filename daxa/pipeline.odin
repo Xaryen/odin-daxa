@@ -1,6 +1,8 @@
 package daxa
 
 import "core:c"
+import vk "vendor:vulkan"
+
 
 foreign import lib "daxa.lib"
 _ :: lib
@@ -8,7 +10,7 @@ _ :: lib
 ShaderInfo :: struct {
 	byte_code:      ^u32,
 	byte_code_size: u32,
-	create_flags:   VkPipelineShaderStageCreateFlags,
+	create_flags:   vk.PipelineShaderStageCreateFlags,
 
 	required_subgroup_size: struct {
 		value:     u32,
@@ -25,7 +27,7 @@ RayTracingShaderInfo :: struct {
 
 RayTracingShaderGroupInfo :: struct {
 	// TODO: daxa types?
-	type:                      VkRayTracingShaderGroupTypeKHR,
+	type:                      vk.RayTracingShaderGroupTypeKHR,
 	general_shader_index:      u32,
 	closest_hit_shader_index:  u32,
 	any_hit_shader_index:      u32,
@@ -113,31 +115,31 @@ foreign lib {
 
 // RASTER PIPELINE
 DepthTestInfo :: struct {
-	depth_attachment_format: VkFormat,
+	depth_attachment_format: vk.Format,
 	enable_depth_write:      Bool8,
-	depth_test_compare_op:   VkCompareOp,
+	depth_test_compare_op:   vk.CompareOp,
 	min_depth_bounds:        f32,
 	max_depth_bounds:        f32,
 }
 
 ConservativeRasterInfo :: struct {
-	mode: VkConservativeRasterizationModeEXT,
+	mode: vk.ConservativeRasterizationModeEXT,
 	size: f32,
 }
 
 LineRasterInfo :: struct {
-	mode:            VkLineRasterizationModeKHR,
+	mode:            vk.LineRasterizationModeKHR,
 	stippled:        Bool8,
 	stipple_factor:  u32,
 	stipple_pattern: u16,
 }
 
 RasterizerInfo :: struct {
-	primitive_topology:         VkPrimitiveTopology,
+	primitive_topology:         vk.PrimitiveTopology,
 	primitive_restart_enable:   Bool8,
-	polygon_mode:               VkPolygonMode,
-	face_culling:               VkCullModeFlags,
-	front_face_winding:         VkFrontFace,
+	polygon_mode:               vk.PolygonMode,
+	face_culling:               vk.CullModeFlags,
+	front_face_winding:         vk.FrontFace,
 	depth_clamp_enable:         Bool8,
 	rasterizer_discard_enable:  Bool8,
 	depth_bias_enable:          Bool8,
@@ -157,24 +159,24 @@ RasterizerInfo :: struct {
 	},
 
 	static_state_sample_count: struct {
-		value:     VkSampleCountFlagBits,
+		value:     vk.SampleCountFlags,
 		has_value: Bool8,
 	},
 }
 
 // should be moved in c++ from types to pipeline.hpp.
 BlendInfo :: struct {
-	src_color_blend_factor: VkBlendFactor,
-	dst_color_blend_factor: VkBlendFactor,
-	color_blend_op:         VkBlendOp,
-	src_alpha_blend_factor: VkBlendFactor,
-	dst_alpha_blend_factor: VkBlendFactor,
-	alpha_blend_op:         VkBlendOp,
-	color_write_mask:       VkColorComponentFlags,
+	src_color_blend_factor: vk.BlendFactor,
+	dst_color_blend_factor: vk.BlendFactor,
+	color_blend_op:         vk.BlendOp,
+	src_alpha_blend_factor: vk.BlendFactor,
+	dst_alpha_blend_factor: vk.BlendFactor,
+	alpha_blend_op:         vk.BlendOp,
+	color_write_mask:       vk.ColorComponentFlags,
 }
 
 RenderAttachment :: struct {
-	format: VkFormat,
+	format: vk.Format,
 
 	blend: struct {
 		value:     BlendInfo,
@@ -184,7 +186,7 @@ RenderAttachment :: struct {
 
 TesselationInfo :: struct {
 	control_points: u32,
-	origin:         VkTessellationDomainOrigin,
+	origin:         vk.TessellationDomainOrigin,
 }
 
 RasterPipelineInfo :: struct {

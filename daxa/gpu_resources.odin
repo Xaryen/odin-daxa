@@ -1,6 +1,7 @@
 package daxa
 
 import "core:c"
+import vk "vendor:vulkan"
 
 foreign import lib "daxa.lib"
 _ :: lib
@@ -64,8 +65,8 @@ SharingMode :: enum i32 {
 ImageInfo :: struct {
 	flags:             ImageFlags,
 	dimensions:        u32,
-	format:            VkFormat,
-	size:              VkExtent3D,
+	format:            vk.Format,
+	size:              vk.Extent3D,
 	mip_level_count:   u32,
 	array_layer_count: u32,
 	sample_count:      u32,
@@ -78,29 +79,29 @@ ImageInfo :: struct {
 }
 
 ImageViewInfo :: struct {
-	type:   VkImageViewType,
-	format: VkFormat,
+	type:   vk.ImageViewType,
+	format: vk.Format,
 	image:  ImageId,
 	slice:  ImageMipArraySlice,
 	name:   SmallString,
 }
 
 SamplerInfo :: struct {
-	magnification_filter:            VkFilter,
-	minification_filter:             VkFilter,
-	mipmap_filter:                   VkFilter,
-	reduction_mode:                  VkSamplerReductionMode,
-	address_mode_u:                  VkSamplerAddressMode,
-	address_mode_v:                  VkSamplerAddressMode,
-	address_mode_w:                  VkSamplerAddressMode,
+	magnification_filter:            vk.Filter,
+	minification_filter:             vk.Filter,
+	mipmap_filter:                   vk.Filter,
+	reduction_mode:                  vk.SamplerReductionMode,
+	address_mode_u:                  vk.SamplerAddressMode,
+	address_mode_v:                  vk.SamplerAddressMode,
+	address_mode_w:                  vk.SamplerAddressMode,
 	mip_lod_bias:                    f32,
 	enable_anisotropy:               Bool8,
 	max_anisotropy:                  f32,
 	enable_compare:                  Bool8,
-	compare_op:                      VkCompareOp,
+	compare_op:                      vk.CompareOp,
 	min_lod:                         f32,
 	max_lod:                         f32,
-	border_color:                    VkBorderColor,
+	border_color:                    vk.BorderColor,
 	enable_unnormalized_coordinates: Bool8,
 	name:                            SmallString,
 }
@@ -110,19 +111,19 @@ foreign lib {
 	memory_block_get_vma_allocation :: proc(memory_block: MemoryBlock) -> VmaAllocation ---
 }
 
-GeometryFlagBits :: enum i32 {
+GeometryFlag :: enum i32 {
 	OPAQUE                          = 1,
 	NO_DUPLICATE_ANY_HIT_INVOCATION = 2,
 }
 
-GeometryFlags :: i32
+GeometryFlags :: bit_set[GeometryFlag;i32]
 
 BlasTriangleGeometryInfo :: struct {
-	vertex_format:  VkFormat,
+	vertex_format:  vk.Format,
 	vertex_data:    DeviceAddress,
 	vertex_stride:  u64,
 	max_vertex:     u32,
-	index_type:     VkIndexType,
+	index_type:     vk.IndexType,
 	index_data:     DeviceAddress,
 	transform_data: DeviceAddress,
 	count:          u32,
@@ -159,7 +160,7 @@ BlasGeometryInfoSpansUnion :: struct #raw_union {
 	aabbs:     BlasAabbsGeometryInfoSpan,
 }
 
-BuildAccelerationStructureFlagBits :: enum i32 {
+BuildAccelerationStructureFlag :: enum i32 {
 	ALLOW_UPDATE      = 1,
 	ALLOW_COMPACTION  = 2,
 	PREFER_FAST_TRACE = 4,
@@ -167,7 +168,7 @@ BuildAccelerationStructureFlagBits :: enum i32 {
 	LOW_MEMORY        = 16,
 }
 
-BuildAcclelerationStructureFlags :: u32
+BuildAcclelerationStructureFlags :: bit_set[BuildAccelerationStructureFlag;u32]
 
 TlasBuildInfo :: struct {
 	flags:          BuildAcclelerationStructureFlags,

@@ -1,6 +1,7 @@
 package daxa
 
 import "core:c"
+import vk "vendor:vulkan"
 
 foreign import lib "daxa.lib"
 _ :: lib
@@ -238,39 +239,37 @@ MissingRequiredVkFeature :: enum i32 {
 	MAX_ENUM                                            = 40,
 }
 
-DeviceExplicitFeatureFlagBits :: enum i32 {
-	NONE                                  = 0,
-	BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY  = 1,
-	ACCELERATION_STRUCTURE_CAPTURE_REPLAY = 2,
-	VK_MEMORY_MODEL                       = 4,
-	ROBUSTNESS_2                          = 8,
-	PIPELINE_LIBRARY_GROUP_HANDLES        = 16,
+DeviceExplicitFeatureFlag :: enum i32 {
+	BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY,  
+	ACCELERATION_STRUCTURE_CAPTURE_REPLAY, 
+	VK_MEMORY_MODEL,                       
+	ROBUSTNESS_2,                          
+	PIPELINE_LIBRARY_GROUP_HANDLES,        
 }
 
-ExplicitFeatureFlags :: DeviceExplicitFeatureFlagBits
+ExplicitFeatureFlags :: bit_set[DeviceExplicitFeatureFlag; i32]
 
-DeviceImplicitFeatureFlagBits :: enum i32 {
-	NONE                           = 0,
-	MESH_SHADER                    = 1,
-	BASIC_RAY_TRACING              = 2,
-	RAY_TRACING_PIPELINE           = 4,
-	RAY_TRACING_INVOCATION_REORDER = 8,
-	RAY_TRACING_POSITION_FETCH     = 16,
-	CONSERVATIVE_RASTERIZATION     = 32,
-	SHADER_ATOMIC_INT64            = 64,
-	IMAGE_ATOMIC64                 = 128,
-	SHADER_FLOAT16                 = 256,
-	SHADER_INT8                    = 512,
-	DYNAMIC_STATE_3                = 1024,
-	SHADER_ATOMIC_FLOAT            = 2048,
-	SWAPCHAIN                      = 4096,
-	SHADER_INT16                   = 8192,
-	SHADER_CLOCK                   = 16384,
-	HOST_IMAGE_COPY                = 32768,
-	LINE_RASTERIZATION             = 65536,
+DeviceImplicitFeatureFlag :: enum i32 {
+	MESH_SHADER,                    
+	BASIC_RAY_TRACING,              
+	RAY_TRACING_PIPELINE,           
+	RAY_TRACING_INVOCATION_REORDER, 
+	RAY_TRACING_POSITION_FETCH,     
+	CONSERVATIVE_RASTERIZATION,     
+	SHADER_ATOMIC_INT64,            
+	IMAGE_ATOMIC64,                 
+	SHADER_FLOAT16,                 
+	SHADER_INT8,                    
+	DYNAMIC_STATE_3,                
+	SHADER_ATOMIC_FLOAT,            
+	SWAPCHAIN,                      
+	SHADER_INT16,                   
+	SHADER_CLOCK,                   
+	HOST_IMAGE_COPY,                
+	LINE_RASTERIZATION,             
 }
 
-ImplicitFeatureFlags :: DeviceImplicitFeatureFlagBits
+ImplicitFeatureFlags :: bit_set[DeviceImplicitFeatureFlag; i32]
 
 DeviceProperties :: struct {
 	vulkan_api_version:  u32,
@@ -315,43 +314,6 @@ DeviceProperties :: struct {
 	missing_required_feature:      MissingRequiredVkFeature,
 }
 
-@(default_calling_convention="c", link_prefix="daxa_")
-foreign lib {
-	/// DEPRECATED: use daxa_instance_create_device_2 and daxa_DeviceInfo2 instead!
-	default_device_score :: proc(properties: ^DeviceProperties) -> i32 ---
-}
-
-/// WARNING: DEPRECATED, use daxa_ImplicitFeatureFlags and daxa_ExplicitFeatureFlags instead!
-DeviceFlagBits :: enum i32 {
-	BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT = 1,
-	CONSERVATIVE_RASTERIZATION               = 2,
-	MESH_SHADER_BIT                          = 4,
-	SHADER_ATOMIC64                          = 8,
-	IMAGE_ATOMIC64                           = 16,
-	VK_MEMORY_MODEL                          = 32,
-	RAY_TRACING                              = 64,
-	SHADER_FLOAT16                           = 128,
-	SHADER_INT8                              = 256,
-	ROBUST_BUFFER_ACCESS                     = 512,
-	ROBUST_IMAGE_ACCESS                      = 1024,
-	DYNAMIC_STATE_3                          = 2048,
-	SHADER_ATOMIC_FLOAT                      = 4096,
-}
-
-/// WARNING: DEPRECATED, use daxa_ImplicitFeatureFlags and daxa_ExplicitFeatureFlags instead!
-DeviceFlags :: u32
-
-/// WARNING: DEPRECATED, use daxa_DeviceInfo2 instead!
-DeviceInfo :: struct {
-	selector:                            proc "c" (properties: ^DeviceProperties) -> i32,
-	flags:                               DeviceFlags,
-	max_allowed_images:                  u32,
-	max_allowed_buffers:                 u32,
-	max_allowed_samplers:                u32,
-	max_allowed_acceleration_structures: u32,
-	name:                                SmallString,
-}
-
 DeviceInfo2 :: struct {
 	physical_device_index:               u32,                  // Index into list of devices returned from daxa_instance_list_devices_properties.
 	explicit_features:                   ExplicitFeatureFlags, // Explicit features must be manually enabled.
@@ -369,7 +331,7 @@ Queue :: struct {
 
 CommandSubmitInfo :: struct {
 	queue:                           Queue,
-	wait_stages:                     VkPipelineStageFlags,
+	wait_stages:                     vk.PipelineStageFlags,
 	command_lists:                   ^ExecutableCommandList,
 	command_list_count:              u64,
 	wait_binary_semaphores:          ^BinarySemaphore,
@@ -465,37 +427,31 @@ DeviceMemoryReport :: struct {
 	memory_block_list:                    ^MemoryBlockDeviceMemorySizePair,
 }
 
-MemoryImageCopyFlagBits :: enum i32 {
+MemoryImageCopyFlag :: enum i32 {
 	NONE   = 0,
 	MEMCPY = 1,
 }
 
+MemoryImageCopyFlags :: bit_set[MemoryImageCopyFlag; i32]
+
 MemoryToImageCopyInfo :: struct {
-	flags:        MemoryImageCopyFlagBits,
+	flags:        MemoryImageCopyFlags,
 	memory_ptr:   ^u8,
 	image_id:     ImageId,
 	image_layout: ImageLayout,
 	image_slice:  ImageArraySlice,
-	image_offset: VkOffset3D,
-	image_extent: VkExtent3D,
+	image_offset: vk.Offset3D,
+	image_extent: vk.Extent3D,
 }
 
 ImageToMemoryCopyInfo :: struct {
-	flags:        MemoryImageCopyFlagBits,
+	flags:        MemoryImageCopyFlags,
 	image_id:     ImageId,
 	image_layout: ImageLayout,
 	image_slice:  ImageArraySlice,
-	image_offset: VkOffset3D,
-	image_extent: VkExtent3D,
+	image_offset: vk.Offset3D,
+	image_extent: vk.Extent3D,
 	memory_ptr:   ^u8,
-}
-
-/* deprecated("Use daxa_HostImageLayoutOperationInfo instead; API:3.2") */
-HostImageLayoutTransitionInfo :: struct {
-	image_id:         ImageId,
-	old_image_layout: ImageLayout,
-	new_image_layout: ImageLayout,
-	image_slice:      ImageMipArraySlice,
 }
 
 HostImageLayoutOperationInfo :: struct {
@@ -506,8 +462,8 @@ HostImageLayoutOperationInfo :: struct {
 @(default_calling_convention="c", link_prefix="daxa_")
 foreign lib {
 	dvc_device_memory_report                :: proc(device: Device, report: ^DeviceMemoryReport) -> Result ---
-	dvc_buffer_memory_requirements          :: proc(device: Device, info: ^BufferInfo) -> VkMemoryRequirements ---
-	dvc_image_memory_requirements           :: proc(device: Device, info: ^ImageInfo) -> VkMemoryRequirements ---
+	dvc_buffer_memory_requirements          :: proc(device: Device, info: ^BufferInfo) -> vk.MemoryRequirements ---
+	dvc_image_memory_requirements           :: proc(device: Device, info: ^ImageInfo) -> vk.MemoryRequirements ---
 	dvc_create_memory                       :: proc(device: Device, info: ^MemoryBlockInfo, out_memory_block: ^MemoryBlock) -> Result ---
 	dvc_get_tlas_build_sizes                :: proc(device: Device, build_info: ^TlasBuildInfo, out: ^AccelerationStructureBuildSizesInfo) -> Result ---
 	dvc_get_blas_build_sizes                :: proc(device: Device, build_info: ^BlasBuildInfo, out: ^AccelerationStructureBuildSizesInfo) -> Result ---
@@ -539,12 +495,12 @@ foreign lib {
 	dvc_is_sampler_valid                    :: proc(device: Device, sampler: SamplerId) -> Bool8 ---
 	dvc_is_tlas_valid                       :: proc(device: Device, tlas: TlasId) -> Bool8 ---
 	dvc_is_blas_valid                       :: proc(device: Device, blas: BlasId) -> Bool8 ---
-	dvc_get_vk_buffer                       :: proc(device: Device, buffer: BufferId, out_vk_handle: ^VkBuffer) -> Result ---
-	dvc_get_vk_image                        :: proc(device: Device, image: ImageId, out_vk_handle: ^VkImage) -> Result ---
-	dvc_get_vk_image_view                   :: proc(device: Device, id: ImageViewId, out_vk_handle: ^VkImageView) -> Result ---
-	dvc_get_vk_sampler                      :: proc(device: Device, sampler: SamplerId, out_vk_handle: ^VkSampler) -> Result ---
-	dvc_get_vk_tlas                         :: proc(device: Device, tlas: TlasId, out_vk_handle: ^VkAccelerationStructureInstanceKHR) -> Result ---
-	dvc_get_vk_blas                         :: proc(device: Device, blas: BlasId, out_vk_handle: ^VkAccelerationStructureInstanceKHR) -> Result ---
+	dvc_get_vk_buffer                       :: proc(device: Device, buffer: BufferId, out_vk_handle: ^vk.Buffer) -> Result ---
+	dvc_get_vk_image                        :: proc(device: Device, image: ImageId, out_vk_handle: ^vk.Image) -> Result ---
+	dvc_get_vk_image_view                   :: proc(device: Device, id: ImageViewId, out_vk_handle: ^vk.ImageView) -> Result ---
+	dvc_get_vk_sampler                      :: proc(device: Device, sampler: SamplerId, out_vk_handle: ^vk.Sampler) -> Result ---
+	dvc_get_vk_tlas                         :: proc(device: Device, tlas: TlasId, out_vk_handle: ^vk.AccelerationStructureInstanceKHR) -> Result ---
+	dvc_get_vk_blas                         :: proc(device: Device, blas: BlasId, out_vk_handle: ^vk.AccelerationStructureInstanceKHR) -> Result ---
 	dvc_buffer_device_address               :: proc(device: Device, buffer: BufferId, out_addr: ^DeviceAddress) -> Result ---
 	dvc_buffer_host_address                 :: proc(device: Device, buffer: BufferId, out_addr: ^rawptr) -> Result ---
 	dvc_tlas_device_address                 :: proc(device: Device, tlas: TlasId, out_addr: ^DeviceAddress) -> Result ---
@@ -562,12 +518,10 @@ foreign lib {
 	dvc_copy_memory_to_image                :: proc(device: Device, info: ^MemoryToImageCopyInfo) -> Result ---
 	dvc_copy_image_to_memory                :: proc(device: Device, info: ^ImageToMemoryCopyInfo) -> Result ---
 
-	/* deprecated("Use image_layout_operation instead; API:3.2") */
-	dvc_transition_image_layout     :: proc(device: Device, info: ^HostImageLayoutTransitionInfo) -> Result ---
 	dvc_image_layout_operation      :: proc(device: Device, info: ^HostImageLayoutOperationInfo) -> Result ---
-	dvc_get_vk_device               :: proc(device: Device) -> VkDevice ---
-	dvc_get_vk_physical_device      :: proc(device: Device) -> VkPhysicalDevice ---
-	dvc_get_vk_queue                :: proc(self: Device, queue: Queue, vk_queue: ^VkQueue, vk_queue_family_index: ^u32) -> Result ---
+	dvc_get_vk_device               :: proc(device: Device) -> vk.Device ---
+	dvc_get_vk_physical_device      :: proc(device: Device) -> vk.PhysicalDevice ---
+	dvc_get_vk_queue                :: proc(self: Device, queue: Queue, vk_queue: ^vk.Queue, vk_queue_family_index: ^u32) -> Result ---
 	dvc_queue_wait_idle             :: proc(device: Device, queue: Queue) -> Result ---
 	dvc_queue_count                 :: proc(device: Device, queue_family: QueueFamily, out_value: ^u32) -> Result ---
 	dvc_wait_idle                   :: proc(device: Device) -> Result ---

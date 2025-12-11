@@ -98,12 +98,13 @@ main :: proc() {
 	result(daxa.create_instance(&instance_info, &ctx.instance))
 
 	device_info := daxa.DEFAULT_DEVICE_INFO_2
-	result(daxa.instance_choose_device(ctx.instance, .SWAPCHAIN, &device_info))
+	result(daxa.instance_choose_device(ctx.instance, {.SWAPCHAIN}, &device_info))
 
 	
 	result(daxa.instance_create_device_2(ctx.instance, &device_info, &ctx.device))
 
 	test_props := daxa.dvc_properties(ctx.device)
+	fmt.println(test_props^)
 	fmt.printfln("%s", test_props.device_name[:])
 	swapchaininfo := daxa.SwapchainInfo{
 		native_window           = get_native_handle(),

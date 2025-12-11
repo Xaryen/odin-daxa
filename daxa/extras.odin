@@ -68,7 +68,7 @@ DEFAULT_INSTANCE_INFO :: InstanceInfo{
 
 DEFAULT_DEVICE_INFO_2 :: DeviceInfo2{
 	physical_device_index = max(u32),
-	explicit_features = .BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY,
+	explicit_features = {.BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY},
 	max_allowed_images = 10000,
 	max_allowed_buffers = 10000,
 	max_allowed_samplers = 400,
