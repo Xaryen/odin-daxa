@@ -2,7 +2,6 @@ package main
 
 import "base:runtime"
 import "core:strings"
-import "core:time"
 import "core:fmt"
 import "core:log"
 import "vendor:glfw"
@@ -25,7 +24,7 @@ ctx := Program{}
 
 result :: proc(res: daxa.Result, loc := #caller_location, exp := #caller_expression) {
 	if res > .NOT_READY {
-	fmt.eprintfln("DAXA ERROR: %d %v %v", res, loc, exp)
+	fmt.eprintfln("DAXA ERROR: %v %v %v", res, loc, exp)
 	assert(false, "result failed")
 	}
 	log.info(res, loc, exp)
@@ -70,9 +69,8 @@ MyPushConstant :: struct {
 	vertices: daxa.DeviceAddress,
 }
 
-main :: proc()
-{
-	context.logger = log.create_console_logger()
+main :: proc() {
+	// context.logger = log.create_console_logger()
 	ctx.ctx = context
 
 	glfw.SetErrorCallback(glfw_error_callback)
@@ -133,51 +131,261 @@ main :: proc()
 
 	// pink_screen()
 
-	triangle()
+	// triangle()
+
+	compute_triangle()
 
 	result(daxa.dvc_wait_idle(ctx.device))
 	result(daxa.dvc_collect_garbage(ctx.device))
 	daxa.dvc_dec_refcnt(ctx.device)
 	daxa.instance_dec_refcnt(ctx.instance)
 
-	fmt.println("finished running")
+	log.info("finished running")
 }
 
+compute_triangle :: proc() {
+	
+	size_x := daxa.swp_get_surface_extent(ctx.swapchain).width
+	size_y := daxa.swp_get_surface_extent(ctx.swapchain).height
 
+	render_image: daxa.ImageId
+	render_image_info := daxa.DEFAULT_IMAGE_INFO
+	render_image_info.dimensions = 2
+	render_image_info.format = .R8G8B8A8_UNORM
+	render_image_info.size = {size_x, size_y, 1}
+	render_image_info.usage = {.SHADER_STORAGE, .TRANSFER_SRC}
+	render_image_info.name = daxa.to_smallstring("render_image")
+	result(daxa.dvc_create_image(
+		device = ctx.device,
+		info = &render_image_info,
+		out_id = &render_image,
+	))
+
+	comp_shader := #load("test_shaders/compute_triangle/comp.spv", []u32)
+
+	compute_pipeline: daxa.ComputePipeline 
+	result(daxa.dvc_create_compute_pipeline(
+		device = ctx.device,
+		info = &{
+			shader_info = {
+				 byte_code = &comp_shader[0],
+			        byte_code_size = u32(len(comp_shader)),
+			        create_flags = {},
+			        entry_point = daxa.to_smallstring("main"),
+			},
+			push_constant_size = size_of(ComputePush),
+			name = daxa.to_smallstring("my compute shader"),
+		},
+		out_pipeline = &compute_pipeline
+	))
+
+	ComputePush :: struct {
+		image:     daxa.ImageViewId,
+		frame_dim: [2]u32,
+	}
+
+	push_constant: ComputePush
+
+	i: int = -1 
+	for !should_close() {
+		i += 1
+		log.info("begin frame:", i)
+		poll_events()
+
+		if ctx.framebuffer_resized {
+			result(daxa.swp_resize(ctx.swapchain))
+			daxa.dvc_destroy_image(ctx.device, render_image)
+			size_x = daxa.swp_get_surface_extent(ctx.swapchain).width
+			size_y = daxa.swp_get_surface_extent(ctx.swapchain).height
+			render_image_info.size = {size_x, size_y, 1}
+			result(daxa.dvc_create_image(
+				device = ctx.device,
+				info = &render_image_info,
+				out_id = &render_image,
+			))
+			ctx.framebuffer_resized = false
+		}
+
+		swapchain_image: daxa.ImageId
+		acq_result := daxa.swp_acquire_next_image(ctx.swapchain, &swapchain_image)
+		assert(daxa.version_of_image(swapchain_image) != 0)
+
+		recorder: daxa.CommandRecorder
+		result(daxa.dvc_create_command_recorder(
+			ctx.device,
+			&{ name = daxa.to_smallstring("my command recorder") },
+			&recorder,
+		))
+
+
+		swapchain_image_info: daxa.ImageInfo
+		result(daxa.dvc_info_image(
+			ctx.device,
+			swapchain_image,
+			&swapchain_image_info
+		))
+
+		result(daxa.cmd_pipeline_image_barrier(
+			cmd_enc = recorder,
+			info = &{
+				dst_access = daxa.ACCESS_COMPUTE_SHADER_READ_WRITE,
+				image_id   = render_image,
+				layout_operation = .TO_GENERAL,
+			},
+		))
+
+		result(daxa.cmd_set_compute_pipeline(
+			cmd_enc = recorder,
+			pipeline = compute_pipeline,
+		))
+
+		push_constant = {
+			image = daxa.default_view(render_image),
+			frame_dim = { size_x, size_y },
+		}
+
+		result(daxa.cmd_push_constant(
+			cmd_enc = recorder,
+			info = &{
+				data = &push_constant,
+				size = size_of(push_constant),
+			},
+		))
+
+		result(daxa.cmd_dispatch(
+			cmd_enc = recorder,
+			info = &{
+				x = (size_x + 7) / 8,
+				y = (size_y + 7) / 8,
+				z = 1,
+			}
+		))
+
+		result(daxa.cmd_pipeline_image_barrier(
+			cmd_enc = recorder,
+			info = &{
+				dst_access = daxa.ACCESS_BLIT_READ,
+				image_id   = render_image,
+				layout_operation = .TO_GENERAL,
+			},
+		))
+
+		result(daxa.cmd_pipeline_image_barrier(
+			cmd_enc = recorder,
+			info = &{
+				dst_access = daxa.ACCESS_BLIT_WRITE,
+				image_id   = swapchain_image,
+				layout_operation = .TO_GENERAL,
+			},
+		))
+
+		result(daxa.cmd_blit_image_to_image(
+			cmd_enc = recorder,
+			info = &{
+				src_image        = render_image,
+				src_image_layout = .GENERAL,
+				dst_image        = swapchain_image,
+				dst_image_layout = .GENERAL,
+				src_slice        = daxa.DEFAULT_IMAGE_ARRAY_SLICE,
+				dst_slice        = daxa.DEFAULT_IMAGE_ARRAY_SLICE,
+				src_offsets      = {{0, 0, 0}, { i32(size_x), i32(size_y), 1 } },
+				dst_offsets      = {{0, 0, 0}, { i32(size_x), i32(size_y), 1 } },
+				filter           = .NEAREST,
+			}
+		))
+
+		result(daxa.cmd_pipeline_image_barrier(
+			cmd_enc = recorder,
+			info = &{
+				src_access = daxa.ACCESS_BLIT_WRITE,
+				image_id   = swapchain_image,
+				layout_operation = .TO_PRESENT_SRC,
+			}
+		))
+
+		executable_commands: daxa.ExecutableCommandList
+		result(daxa.cmd_complete_current_commands(recorder, &executable_commands))
+
+		daxa.destroy_command_recorder(recorder)
+
+		acquire_semaphore := daxa.swp_current_acquire_semaphore(ctx.swapchain)
+		present_semaphore := daxa.swp_current_present_semaphore(ctx.swapchain)
+
+		current_timeline_pair :: proc() -> daxa.TimelinePair {
+			gpu_value := daxa.swp_gpu_timeline_semaphore(ctx.swapchain)^
+			cpu_value := daxa.swp_current_cpu_timeline_value(ctx.swapchain)
+			return {gpu_value, cpu_value}
+		}
+
+		timeline_pair := current_timeline_pair()
+		result(daxa.dvc_submit(
+			device = ctx.device,
+			info = &{
+				command_lists = &executable_commands,
+				command_list_count = 1,
+				wait_binary_semaphores = acquire_semaphore,
+				wait_binary_semaphore_count = 1,
+				signal_binary_semaphores = present_semaphore,
+				signal_binary_semaphore_count = 1,
+				signal_timeline_semaphores = &timeline_pair,
+				signal_timeline_semaphore_count = 1,
+				// wait_stages: vk.PipelineStageFlags,
+				// wait_timeline_semaphores: ^TimelinePair, //const *
+				// wait_timeline_semaphore_count: u64,
+			},
+		))
+
+		daxa.executable_commands_dec_refcnt(executable_commands)
+
+		result(daxa.dvc_present(
+			device = ctx.device,
+			info = &{
+				wait_binary_semaphores      = present_semaphore,
+				wait_binary_semaphore_count = 1,
+				swapchain                   = ctx.swapchain,
+				queue                       = {},
+			}
+		))
+
+		result(daxa.dvc_collect_garbage(ctx.device))
+
+		log.info("end frame:", i)
+		// if i > 1000 do break
+	}
+
+}
 
 triangle :: proc() {
 	
-	vert_shader := #load("vert.spv", []u32)
-	frag_shader := #load("frag.spv", []u32)
-
-	render_attachments: [8]daxa.RenderAttachment
-	render_attachments[0] = { format = daxa.swp_get_format(ctx.swapchain) }
+	vert_shader := #load("test_shaders/triangle/vert.spv", []u32)
+	frag_shader := #load("test_shaders/triangle/frag.spv", []u32)
 
 	raster_pipeline: daxa.RasterPipeline 
 	result(daxa.dvc_create_raster_pipeline(
 		device       = ctx.device,
 		info         = &{
-		vertex_shader_info = {
-			value = { byte_code = &vert_shader[0],
-		        byte_code_size = u32(len(vert_shader)),
-		        create_flags = {},
-		        entry_point = daxa.to_smallstring("main") },
-			has_value = true
-		},
-		fragment_shader_info = {
-			value = { byte_code = &frag_shader[0],
-			        byte_code_size = u32(len(frag_shader)),
-			        create_flags = {},
-			        entry_point = daxa.to_smallstring("main") },
-			has_value = true
-		},
+			vertex_shader_info = {
+				value = { byte_code = &vert_shader[0],
+				        byte_code_size = u32(len(vert_shader)),
+				        create_flags = {},
+				        entry_point = daxa.to_smallstring("main") },
+				has_value = true
+			},
+			fragment_shader_info = {
+				value = { byte_code = &frag_shader[0],
+				        byte_code_size = u32(len(frag_shader)),
+				        create_flags = {},
+				        entry_point = daxa.to_smallstring("main") },
+				has_value = true
+			},
 
-		color_attachments = { data = render_attachments, size = 1 },
+			color_attachments = {
+				data = { 0 = { format = daxa.swp_get_format(ctx.swapchain) }, 1..<7 = {} }, size = 1 },
 
-		depth_test         = { value = {}, has_value = 0, },
-		raster             = daxa.DEFAULT_RASTERIZATION_INFO,
-		push_constant_size = daxa.MAX_PUSH_CONSTANT_BYTE_SIZE,
-		name = daxa.to_smallstring("my raster pipeline"),
+			depth_test         = { value = {}, has_value = 0, },
+			raster             = daxa.DEFAULT_RASTERIZATION_INFO,
+			push_constant_size = daxa.MAX_PUSH_CONSTANT_BYTE_SIZE,
+			name = daxa.to_smallstring("my raster pipeline"),
 		},
 		out_pipeline = &raster_pipeline
 	))
@@ -215,7 +423,7 @@ triangle :: proc() {
 	i: int = -1
 	for !should_close() {
 		i += 1
-		fmt.println("begin frame:", i)
+		log.info("begin frame:", i)
 		poll_events()
 
 		if ctx.framebuffer_resized {
@@ -225,7 +433,7 @@ triangle :: proc() {
 
 		swapchain_image: daxa.ImageId
 		acq_result := daxa.swp_acquire_next_image(ctx.swapchain, &swapchain_image)
-		// fmt.println(acq_result) // needs the "is_empty" check?
+		// log.info(acq_result) // needs the "is_empty" check?
 		assert(acq_result == .SUCCESS)
 		assert(daxa.version_of_image(swapchain_image) != 0) //this is an empty check?
 
@@ -252,33 +460,34 @@ triangle :: proc() {
 				dst_access = daxa.ACCESS_COLOR_ATTACHMENT_OUTPUT_READ_WRITE,
 				image_id   = swapchain_image,
 				layout_operation = .TO_GENERAL,
-			}
-		)
-
-		rais: [8]daxa.RenderAttachmentInfo
-		rais[0] = {
-			image_view = daxa.default_view(swapchain_image),
-			load_op    = .CLEAR,
-			clear_value = {
-				values = { color = { float32 = [4]f32{0.1, 0, 0.5, 1} }},
-				index  = 0,
 			},
-		}
+		)
 
 		result(daxa.cmd_begin_renderpass(
 			cmd_enc = recorder,
 			info = &{
-				color_attachments = { rais, 1},
+				color_attachments = {
+					{ 0 = {
+						image_view = daxa.default_view(swapchain_image),
+						load_op    = .CLEAR,
+						clear_value = {
+							values = { color = { float32 = [4]f32{0.1, 0, 0.5, 1} } },
+							index  = 0,
+						},
+					}, 1..<7 = {} },
+					1,
+				},
 				render_area = { extent = {
 					width  = swapchain_image_info.size.width,
 					height = swapchain_image_info.size.height,
 				}},
-			}
+			},
 		))
 
 		result(daxa.cmd_set_raster_pipeline(
 			cmd_enc = recorder,
-			pipeline = raster_pipeline))
+			pipeline = raster_pipeline,
+		))
 
 
 		result(daxa.cmd_push_constant(
@@ -286,7 +495,7 @@ triangle :: proc() {
 			info = &{
 				data = &push_constant,
 				size = size_of(push_constant),
-			}
+			},
 		))
 
 		daxa.cmd_draw(
@@ -294,7 +503,7 @@ triangle :: proc() {
 			info = &{
 				vertex_count   = 3,
 				instance_count = 1,
-			}
+			},
 		)
 
 		daxa.cmd_end_renderpass(recorder)
@@ -356,7 +565,7 @@ triangle :: proc() {
 
 		result(daxa.dvc_collect_garbage(ctx.device))
 
-		fmt.println("end frame:", i)
+		log.info("end frame:", i)
 		// break
 	}
 }
@@ -365,7 +574,7 @@ pink_screen :: proc() {
 	i: int = -1
 	for !should_close() {
 		i += 1
-		fmt.println("begin frame:", i)
+		log.info("begin frame:", i)
 		poll_events()
 
 
@@ -376,7 +585,7 @@ pink_screen :: proc() {
 
 		swapchain_image: daxa.ImageId
 		acq_result := daxa.swp_acquire_next_image(ctx.swapchain, &swapchain_image)
-		// fmt.println(acq_result) // needs the "is_empty" check?
+		// log.info(acq_result) // needs the "is_empty" check?
 		assert(acq_result == .SUCCESS)
 		assert(daxa.version_of_image(swapchain_image) != 0) //this is an empty check?
 
@@ -477,7 +686,7 @@ pink_screen :: proc() {
 
 		result(daxa.dvc_collect_garbage(ctx.device))
 
-		fmt.println("end frame:", i)
+		log.info("end frame:", i)
 	}
 }
 
@@ -831,7 +1040,7 @@ copy_test :: proc() {
 	query_results: [4]u64
 	result(daxa.timeline_query_pool_query_results(timeline_query_pool, 0, 2, &query_results[0]))
 	
-	fmt.println(query_results)
+	log.info(query_results)
 
 	if ((query_results[1] != 0) && (query_results[3] != 0)) {
 		fmt.printfln("gpu execution took %v ms", f64(query_results[2] - query_results[0]) / 1_000_000)
@@ -846,16 +1055,16 @@ copy_test :: proc() {
 
 	readback_data := (^ImageArray)(readback_data_ptr)^
 
-	fmt.println("Original data: ")
+	log.info("Original data: ")
 	{
 		buf := get_printable_char_buffer(data)
-		fmt.println(buf)
+		log.info(buf)
 	}
 
-	fmt.println("Readback data: ")
+	log.info("Readback data: ")
 	{
 		buf := get_printable_char_buffer(readback_data)
-		fmt.println(buf)
+		log.info(buf)
 	}
 
 	assert(data == readback_data)

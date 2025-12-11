@@ -1,6 +1,7 @@
 _old
 ref
 gen
+ignore
 _del
 *.pdb
 *.rdi

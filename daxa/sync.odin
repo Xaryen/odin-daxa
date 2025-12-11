@@ -93,7 +93,7 @@ TimelinePair :: struct {
 	value:     u64,
 }
 
-NONE :: Access{}
+ACCESS_NONE :: Access{}
 
 ACCESS_TRANSFER_READ :: Access{stages = {.TRANSFER}, access_type = {.MEMORY_READ}}
 ACCESS_HOST_WRITE :: Access{stages = {.HOST}, access_type = {.MEMORY_WRITE}}

@@ -1,12 +1,10 @@
 package daxa
 
-import sa "core:container/small_array"
-
 INSTANCE_FLAG_DEBUG_UTIL:                InstanceFlags : 0x1
 INSTANCE_FLAG_PARENT_MUST_OUTLIVE_CHILD: InstanceFlags : 0x2
 
-@rodata
-DEFAULT_RASTERIZATION_INFO := RasterizerInfo{
+// todo these all should probably just be constants
+DEFAULT_RASTERIZATION_INFO :: RasterizerInfo{
 	primitive_topology = .TRIANGLE_LIST,
 	primitive_restart_enable = false,
 	polygon_mode = .FILL,
@@ -24,8 +22,7 @@ DEFAULT_RASTERIZATION_INFO := RasterizerInfo{
 	static_state_sample_count = {value = {._1}, has_value = 1},
 }
 
-@rodata
-DEFAULT_BLEND_INFO := BlendInfo{
+DEFAULT_BLEND_INFO :: BlendInfo{
 	src_color_blend_factor = .ONE,
 	dst_color_blend_factor = .ZERO,
 	color_blend_op = .ADD,
@@ -35,8 +32,7 @@ DEFAULT_BLEND_INFO := BlendInfo{
 	color_write_mask = {.R, .G, .B, .A}
 }
 
-@rodata
-DEFAULT_IMAGE_INFO := ImageInfo{
+DEFAULT_IMAGE_INFO :: ImageInfo{
 	flags             = 0,
 	dimensions        = 2,
 	format            = .R8G8B8A8_SRGB,
@@ -50,16 +46,13 @@ DEFAULT_IMAGE_INFO := ImageInfo{
 	name              = {},
 }
 
-@rodata
-DEFAULT_IMAGE_ARRAY_SLICE := ImageArraySlice{
+DEFAULT_IMAGE_ARRAY_SLICE :: ImageArraySlice{
 	mip_level        = 0,
 	base_array_layer = 0,
 	layer_count      = 1,
 }
 
-
-@rodata
-DEFAULT_IMAGE_VIEW_INFO := ImageViewInfo{
+DEFAULT_IMAGE_VIEW_INFO :: ImageViewInfo{
     type   = .D2,
     format = .R8G8B8A8_SRGB,
     image  = {},
@@ -67,15 +60,13 @@ DEFAULT_IMAGE_VIEW_INFO := ImageViewInfo{
     name   = {},
 }
 
-@rodata
-DEFAULT_INSTANCE_INFO := InstanceInfo{
+DEFAULT_INSTANCE_INFO :: InstanceInfo{
 	flags = INSTANCE_FLAG_DEBUG_UTIL,
 	engine_name = {},
 	app_name = {},
 }
 
-@rodata
-DEFAULT_DEVICE_INFO_2 := DeviceInfo2{
+DEFAULT_DEVICE_INFO_2 :: DeviceInfo2{
 	physical_device_index = max(u32),
 	explicit_features = .BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY,
 	max_allowed_images = 10000,
@@ -85,8 +76,7 @@ DEFAULT_DEVICE_INFO_2 := DeviceInfo2{
 	name = {},
 }
 
-to_smallstring :: proc(s: string) -> SmallString
-{
+to_smallstring :: proc(s: string) -> SmallString {
 	ss: u_small_string
 	copy(ss.data[:], s)
 	ss.size = u8(len(s))
