@@ -147,7 +147,7 @@ _DAXA_FIXED_LIST_SIZE_T  :: u8
 _DAXA_VARIANT_INDEX_TYPE :: u8
 
 SmallString :: struct {
-	data: [63]i8,
+	data: [63]u8,
 	size: u8,
 }
 
@@ -167,6 +167,12 @@ ImageArraySlice :: struct {
 ImageSlice :: struct {
 	mip_level:   u32,
 	array_layer: u32,
+}
+
+MemoryFlags :: bit_set[MemoryFlag; u32]
+MemoryFlag :: enum u32 {
+	HOST_ACCESS_SEQUENTIAL_WRITE = 10,
+	HOST_ACCESS_RANDOM = 11,
 }
 
 MemoryBlockInfo :: struct {

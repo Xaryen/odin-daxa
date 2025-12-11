@@ -1,9 +1,5 @@
 package daxa
 
-INSTANCE_FLAG_DEBUG_UTIL:                InstanceFlags : 0x1
-INSTANCE_FLAG_PARENT_MUST_OUTLIVE_CHILD: InstanceFlags : 0x2
-
-// todo these all should probably just be constants
 DEFAULT_RASTERIZATION_INFO :: RasterizerInfo{
 	primitive_topology = .TRIANGLE_LIST,
 	primitive_restart_enable = false,
@@ -33,7 +29,7 @@ DEFAULT_BLEND_INFO :: BlendInfo{
 }
 
 DEFAULT_IMAGE_INFO :: ImageInfo{
-	flags             = 0,
+	flags             = IMAGE_FLAG_NONE,
 	dimensions        = 2,
 	format            = .R8G8B8A8_SRGB,
 	size              = {0, 0, 0},
@@ -76,19 +72,12 @@ DEFAULT_DEVICE_INFO_2 :: DeviceInfo2{
 	name = {},
 }
 
-to_smallstring :: proc(s: string) -> SmallString {
-	ss: u_small_string
+small_string :: proc(s: string) -> SmallString {
+	ss: SmallString
 	copy(ss.data[:], s)
 	ss.size = u8(len(s))
-	return transmute(SmallString)ss
+	return ss
 }
-
-u_small_string :: struct {
-	data: [63]u8,
-	size: u8,
-}
-
-VmaAllocation_T :: struct{}
 
 QUEUE_MAIN       :: Queue{.MAIN, 0}
 QUEUE_COMPUTE_0  :: Queue{.COMPUTE, 0}
@@ -101,33 +90,6 @@ QUEUE_TRANSFER_1 :: Queue{.TRANSFER, 1}
 MAX_PUSH_CONSTANT_WORD_SIZE :: (32)
 MAX_PUSH_CONSTANT_BYTE_SIZE :: (MAX_PUSH_CONSTANT_WORD_SIZE * 4)
 PIPELINE_LAYOUT_COUNT       :: (MAX_PUSH_CONSTANT_WORD_SIZE + 1)
-
-
-ImageUsageFlags :: bit_set[ImageUsageFlag; u32]
-ImageUsageFlag :: enum u32 {
-	TRANSFER_SRC = 0,
-	TRANSFER_DST,
-	SHADER_SAMPLED,
-	SHADER_STORAGE,
-	COLOR_ATTACHMENT,
-	DEPTH_STENCIL_ATTACHMENT,
-	TRANSIENT_ATTACHMENT,
-	FRAGMENT_SHADING_RATE_ATTACHMENT = 8,
-	FRAGMENT_DENSITY_MAP             = 9,
-	HOST_TRANSFER                    = 22,
-}
-
-
-// MemoryFlags :: u32
-MemoryFlags :: bit_set[MemoryFlag; u32]
-MemoryFlag :: enum u32 {
-	// DEDICATED_MEMORY = 0x00000001, //deprecated
-	// CAN_ALIAS = 0x00000200,
-	HOST_ACCESS_SEQUENTIAL_WRITE = 10,
-	HOST_ACCESS_RANDOM = 11,
-	// STRATEGY_MIN_MEMORY = 0x00010000,
-	// STRATEGY_MIN_TIME = 0x00020000,
-}
 
 // _DAXA_FIXED_LIST_SIZE_T  :: u8
 // _DAXA_VARIANT_INDEX_TYPE :: u8

@@ -2,6 +2,8 @@ package daxa
 
 import vk "vendor:vulkan"
 
+INSTANCE_FLAG_DEBUG_UTIL:                InstanceFlags : 0x1
+INSTANCE_FLAG_PARENT_MUST_OUTLIVE_CHILD: InstanceFlags : 0x2
 
 foreign import lib "daxa.lib"
 _ :: lib

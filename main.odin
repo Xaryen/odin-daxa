@@ -92,8 +92,8 @@ main :: proc() {
 	})
 
 	instance_info := daxa.DEFAULT_INSTANCE_INFO
-	instance_info.engine_name = daxa.to_smallstring("daxa")
-	instance_info.app_name    = daxa.to_smallstring("daxa app")
+	instance_info.engine_name = daxa.small_string("daxa")
+	instance_info.app_name    = daxa.small_string("daxa app")
 
 	result(daxa.create_instance(&instance_info, &ctx.instance))
 
@@ -120,7 +120,7 @@ main :: proc() {
 		present_operation            = {.IDENTITY},
 		image_usage                  = {.TRANSFER_DST},
 		max_allowed_frames_in_flight = 2,
-		name                         = daxa.to_smallstring("test swapchain"),
+		name                         = daxa.small_string("test swapchain"),
 	}
 
 	result(daxa.dvc_create_swapchain(ctx.device, &swapchaininfo, &ctx.swapchain))
@@ -155,7 +155,7 @@ compute_triangle :: proc() {
 	render_image_info.format = .R8G8B8A8_UNORM
 	render_image_info.size = {size_x, size_y, 1}
 	render_image_info.usage = {.SHADER_STORAGE, .TRANSFER_SRC}
-	render_image_info.name = daxa.to_smallstring("render_image")
+	render_image_info.name = daxa.small_string("render_image")
 	result(daxa.dvc_create_image(
 		device = ctx.device,
 		info = &render_image_info,
@@ -172,10 +172,10 @@ compute_triangle :: proc() {
 				 byte_code = &comp_shader[0],
 			        byte_code_size = u32(len(comp_shader)),
 			        create_flags = {},
-			        entry_point = daxa.to_smallstring("main"),
+			        entry_point = daxa.small_string("main"),
 			},
 			push_constant_size = size_of(ComputePush),
-			name = daxa.to_smallstring("my compute shader"),
+			name = daxa.small_string("my compute shader"),
 		},
 		out_pipeline = &compute_pipeline
 	))
@@ -214,7 +214,7 @@ compute_triangle :: proc() {
 		recorder: daxa.CommandRecorder
 		result(daxa.dvc_create_command_recorder(
 			ctx.device,
-			&{ name = daxa.to_smallstring("my command recorder") },
+			&{ name = daxa.small_string("my command recorder") },
 			&recorder,
 		))
 
@@ -369,14 +369,14 @@ triangle :: proc() {
 				value = { byte_code = &vert_shader[0],
 				        byte_code_size = u32(len(vert_shader)),
 				        create_flags = {},
-				        entry_point = daxa.to_smallstring("main") },
+				        entry_point = daxa.small_string("main") },
 				has_value = true
 			},
 			fragment_shader_info = {
 				value = { byte_code = &frag_shader[0],
 				        byte_code_size = u32(len(frag_shader)),
 				        create_flags = {},
-				        entry_point = daxa.to_smallstring("main") },
+				        entry_point = daxa.small_string("main") },
 				has_value = true
 			},
 
@@ -386,7 +386,7 @@ triangle :: proc() {
 			depth_test         = { value = {}, has_value = 0, },
 			raster             = daxa.DEFAULT_RASTERIZATION_INFO,
 			push_constant_size = daxa.MAX_PUSH_CONSTANT_BYTE_SIZE,
-			name = daxa.to_smallstring("my raster pipeline"),
+			name = daxa.small_string("my raster pipeline"),
 		},
 		out_pipeline = &raster_pipeline
 	))
@@ -397,7 +397,7 @@ triangle :: proc() {
 		info = &{
 			size = size_of(MyVertex) * 3,
 			allocate_info = {.HOST_ACCESS_SEQUENTIAL_WRITE},
-			name = daxa.to_smallstring("vertex buffer",)
+			name = daxa.small_string("vertex buffer",)
 		},
 		out_id = &vertex_buffer,
 	))
@@ -442,7 +442,7 @@ triangle :: proc() {
 		recorder: daxa.CommandRecorder
 		result(daxa.dvc_create_command_recorder(
 			ctx.device,
-			&{ name = daxa.to_smallstring("my command recorder") },
+			&{ name = daxa.small_string("my command recorder") },
 			&recorder,
 		))
 
@@ -604,7 +604,7 @@ pink_screen :: proc() {
 		recorder: daxa.CommandRecorder
 		result(daxa.dvc_create_command_recorder(
 			ctx.device,
-			&{ name = daxa.to_smallstring("my command recorder") },
+			&{ name = daxa.small_string("my command recorder") },
 			&recorder,
 		))
 
@@ -720,7 +720,7 @@ copy_test :: proc() {
 	recorder: daxa.CommandRecorder
 	result(daxa.dvc_create_command_recorder(
 		ctx.device,
-		&{name = daxa.to_smallstring("copy command list")},
+		&{name = daxa.small_string("copy command list")},
 		&recorder,
 	))
 
@@ -792,7 +792,7 @@ copy_test :: proc() {
 		ctx.device,
 		&{size = size_of(data),
 			allocate_info = {.HOST_ACCESS_SEQUENTIAL_WRITE},
-			name = daxa.to_smallstring("staging_upload_buffer"),
+			name = daxa.small_string("staging_upload_buffer"),
 		},
 		&staging_upload_buffer,
 	))
@@ -801,7 +801,7 @@ copy_test :: proc() {
 	result(daxa.dvc_create_buffer(
 		ctx.device,
 		&{size = size_of(data),
-			name = daxa.to_smallstring("device_local_buffer"),
+			name = daxa.small_string("device_local_buffer"),
 		},
 		&device_local_buffer,
 	))
@@ -811,7 +811,7 @@ copy_test :: proc() {
 		ctx.device,
 		&{size = size_of(data),
 			allocate_info = {.HOST_ACCESS_RANDOM},
-			name = daxa.to_smallstring("staging_readback_buffer"),
+			name = daxa.small_string("staging_readback_buffer"),
 		},
 		&staging_readback_buffer,
 	))
@@ -824,7 +824,7 @@ copy_test :: proc() {
 	image_1_info.format = .R32G32B32A32_SFLOAT
 	image_1_info.size = {SIZE_X, SIZE_Y, SIZE_Z}
 	image_1_info.usage = {.SHADER_STORAGE, .TRANSFER_DST, .TRANSFER_SRC}
-	image_1_info.name = daxa.to_smallstring("image_1")
+	image_1_info.name = daxa.small_string("image_1")
 
 	result(daxa.dvc_create_image(
 		ctx.device,
@@ -838,7 +838,7 @@ copy_test :: proc() {
 	image_2_info.format = .R32G32B32A32_SFLOAT
 	image_2_info.size = {SIZE_X, SIZE_Y, SIZE_Z}
 	image_2_info.usage = {.SHADER_STORAGE, .TRANSFER_DST, .TRANSFER_SRC}
-	image_2_info.name = daxa.to_smallstring("image_2")
+	image_2_info.name = daxa.small_string("image_2")
 
 	result(daxa.dvc_create_image(
 		ctx.device,
@@ -852,7 +852,7 @@ copy_test :: proc() {
 		device = ctx.device,
 		info   = &{
 			query_count = 2,
-			name        = daxa.to_smallstring("timeline_query",)
+			name        = daxa.small_string("timeline_query",)
 		},
 		out_timeline_query_pool = &timeline_query_pool
 	))

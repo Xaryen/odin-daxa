@@ -27,7 +27,8 @@ The object also remembers its size and some other information.
 To retrieve this information, use function vmaGetAllocationInfo() and inspect
 returned structure VmaAllocationInfo.
 */
-VmaAllocation :: ^VmaAllocation_T
+VmaAllocation_T :: struct{}
+VmaAllocation   :: ^VmaAllocation_T
 
 @(default_calling_convention="c", link_prefix="daxa_")
 foreign lib {
@@ -54,8 +55,29 @@ BufferInfo :: struct {
 	name:          SmallString,
 }
 
-ImageFlags      :: u32
-// ImageUsageFlags :: u32
+ImageFlag :: enum u32 {
+	ALLOW_MUTABLE_FORMAT = 3,
+	COMPATIBLE_CUBE = 4,
+	COMPATIBLE_2D_ARRAY = 5,
+	ALLOW_ALIAS = 10,
+}
+ImageFlags :: bit_set[ImageFlag; u32]
+IMAGE_FLAG_NONE :: ImageFlags{}
+
+ImageUsageFlag :: enum u32 {
+	TRANSFER_SRC = 0,
+	TRANSFER_DST,
+	SHADER_SAMPLED,
+	SHADER_STORAGE,
+	COLOR_ATTACHMENT,
+	DEPTH_STENCIL_ATTACHMENT,
+	TRANSIENT_ATTACHMENT,
+	FRAGMENT_SHADING_RATE_ATTACHMENT = 8,
+	FRAGMENT_DENSITY_MAP             = 9,
+	HOST_TRANSFER                    = 22,
+}
+ImageUsageFlags :: bit_set[ImageUsageFlag; u32]
+IMAGE_USAGE_FLAG_NONE :: ImageUsageFlags{}
 
 SharingMode :: enum i32 {
 	EXCLUSIVE  = 0,
@@ -115,7 +137,6 @@ GeometryFlag :: enum i32 {
 	OPAQUE                          = 1,
 	NO_DUPLICATE_ANY_HIT_INVOCATION = 2,
 }
-
 GeometryFlags :: bit_set[GeometryFlag;i32]
 
 BlasTriangleGeometryInfo :: struct {
@@ -167,8 +188,8 @@ BuildAccelerationStructureFlag :: enum i32 {
 	PREFER_FAST_BUILD = 8,
 	LOW_MEMORY        = 16,
 }
+BuildAcclelerationStructureFlags :: bit_set[BuildAccelerationStructureFlag; i32]
 
-BuildAcclelerationStructureFlags :: bit_set[BuildAccelerationStructureFlag;u32]
 
 TlasBuildInfo :: struct {
 	flags:          BuildAcclelerationStructureFlags,

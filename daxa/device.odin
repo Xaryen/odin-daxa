@@ -428,7 +428,6 @@ DeviceMemoryReport :: struct {
 }
 
 MemoryImageCopyFlag :: enum i32 {
-	NONE   = 0,
 	MEMCPY = 1,
 }
 
