@@ -4,6 +4,7 @@ import "base:runtime"
 import "core:strings"
 import "core:fmt"
 import "core:log"
+import "core:bytes"
 import "vendor:glfw"
 
 import vk "vendor:vulkan"
@@ -23,7 +24,7 @@ ctx := Program{}
 
 
 result :: proc(res: daxa.Result, loc := #caller_location, exp := #caller_expression) {
-	if res > .NOT_READY {
+	if res > .SUCCESS {
 	fmt.eprintfln("DAXA ERROR: %v %v %v", res, loc, exp)
 	assert(false, "result failed")
 	}
@@ -60,17 +61,8 @@ glfw_error_callback :: proc "c" (code: i32, description: cstring) {
 	log.errorf("glfw: %i: %s", code, description)
 }
 
-MyVertex :: struct {
-	position: [3]f32,
-	color:    [3]f32,
-}
-
-MyPushConstant :: struct {
-	vertices: daxa.DeviceAddress,
-}
-
 main :: proc() {
-	// context.logger = log.create_console_logger()
+	context.logger = log.create_console_logger()
 	ctx.ctx = context
 
 	glfw.SetErrorCallback(glfw_error_callback)
@@ -104,12 +96,11 @@ main :: proc() {
 	result(daxa.instance_create_device_2(ctx.instance, &device_info, &ctx.device))
 
 	test_props := daxa.dvc_properties(ctx.device)
-	fmt.println(test_props^)
-	fmt.printfln("%s", test_props.device_name[:])
+	fmt.printfln("%s", bytes.trim_null(test_props.device_name[:]))
+
 	swapchaininfo := daxa.SwapchainInfo{
 		native_window           = get_native_handle(),
 		native_window_platform  = get_native_platform(),
-		// surface_format_selector = daxa.default_format_selector,
 		surface_format_selector = proc "c" (format: vk.Format) -> i32 {
 			#partial switch format {
 			case .R8G8B8A8_UNORM: return 100
@@ -126,15 +117,21 @@ main :: proc() {
 	result(daxa.dvc_create_swapchain(ctx.device, &swapchaininfo, &ctx.swapchain))
 
 	
+	{
 
-	// simplest_test()
-	// copy_test()
+	cmd_simplest_test()
+	cmd_copy_test()
+	cmd_deferred_destruction_test()
+	cmd_multiple_ecl_test()
+	cmd_build_acceleration_structure_test()
+
+	}
 
 	// pink_screen()
 
 	// triangle()
 
-	compute_triangle()
+	// compute_triangle()
 
 	result(daxa.dvc_wait_idle(ctx.device))
 	result(daxa.dvc_collect_garbage(ctx.device))
@@ -170,9 +167,9 @@ compute_triangle :: proc() {
 		info = &{
 			shader_info = {
 				 byte_code = &comp_shader[0],
-			        byte_code_size = u32(len(comp_shader)),
-			        create_flags = {},
-			        entry_point = daxa.small_string("main"),
+				byte_code_size = u32(len(comp_shader)),
+				create_flags = {},
+				entry_point = daxa.small_string("main"),
 			},
 			push_constant_size = size_of(ComputePush),
 			name = daxa.small_string("my compute shader"),
@@ -357,6 +354,15 @@ compute_triangle :: proc() {
 }
 
 triangle :: proc() {
+
+	MyVertex :: struct {
+	position: [3]f32,
+	color:    [3]f32,
+}
+
+	MyPushConstant :: struct {
+		vertices: daxa.DeviceAddress,
+	}
 	
 	vert_shader := #load("test_shaders/triangle/vert.spv", []u32)
 	frag_shader := #load("test_shaders/triangle/frag.spv", []u32)
@@ -367,16 +373,16 @@ triangle :: proc() {
 		info         = &{
 			vertex_shader_info = {
 				value = { byte_code = &vert_shader[0],
-				        byte_code_size = u32(len(vert_shader)),
-				        create_flags = {},
-				        entry_point = daxa.small_string("main") },
+					byte_code_size = u32(len(vert_shader)),
+					create_flags = {},
+					entry_point = daxa.small_string("main") },
 				has_value = true
 			},
 			fragment_shader_info = {
 				value = { byte_code = &frag_shader[0],
-				        byte_code_size = u32(len(frag_shader)),
-				        create_flags = {},
-				        entry_point = daxa.small_string("main") },
+					byte_code_size = u32(len(frag_shader)),
+					create_flags = {},
+					entry_point = daxa.small_string("main") },
 				has_value = true
 			},
 
@@ -691,7 +697,7 @@ pink_screen :: proc() {
 	}
 }
 
-simplest_test :: proc() {
+cmd_simplest_test :: proc() {
 
 	recorder: daxa.CommandRecorder
 	result(daxa.dvc_create_command_recorder(
@@ -715,7 +721,7 @@ simplest_test :: proc() {
 	///             This is because The device can only do the internal cleanup when no commands get recorded in parallel!
 }
 
-copy_test :: proc() {
+cmd_copy_test :: proc() {
 
 	recorder: daxa.CommandRecorder
 	result(daxa.dvc_create_command_recorder(
@@ -857,14 +863,12 @@ copy_test :: proc() {
 		out_timeline_query_pool = &timeline_query_pool
 	))
 
-	raw_buffer_ptr: rawptr
+	buffer_ptr: ^ImageArray
 	result(daxa.dvc_buffer_host_address(
 		device   = ctx.device,
 		buffer   = staging_upload_buffer,
-		out_addr = &raw_buffer_ptr,
+		out_addr = (^rawptr)(&buffer_ptr),
 	))
-
-	buffer_ptr := (^ImageArray)(raw_buffer_ptr)
 
 	buffer_ptr^ = data
 
@@ -994,25 +998,28 @@ copy_test :: proc() {
 	daxa.cmd_pipeline_barrier(
 		cmd_enc = recorder,
 		info = &{
-		src_access = daxa.ACCESS_TRANSFER_WRITE,
-		dst_access = daxa.ACCESS_TRANSFER_READ,
-	})
+			src_access = daxa.ACCESS_TRANSFER_WRITE,
+			dst_access = daxa.ACCESS_TRANSFER_READ,
+		}
+	)
 
 	daxa.cmd_copy_buffer_to_buffer(
 		cmd_enc = recorder,
 		info = &{
-		src_buffer = device_local_buffer,
-		dst_buffer = staging_readback_buffer,
-		size = size_of(data),
-	})
+			src_buffer = device_local_buffer,
+			dst_buffer = staging_readback_buffer,
+			size = size_of(data),
+		}
+	)
 
 	// Barrier to make sure staging_readback_buffer is has no read after write hazard.
 	daxa.cmd_pipeline_barrier(
 		cmd_enc = recorder,
 		info = &{
-		src_access = daxa.ACCESS_TRANSFER_WRITE,
-		dst_access = daxa.ACCESS_HOST_READ,
-	})
+			src_access = daxa.ACCESS_TRANSFER_WRITE,
+			dst_access = daxa.ACCESS_HOST_READ,
+		}
+	)
 
 	daxa.cmd_write_timestamp(
 		cmd_enc = recorder,
@@ -1047,14 +1054,14 @@ copy_test :: proc() {
 		fmt.printfln("gpu execution took %v ms", f64(query_results[2] - query_results[0]) / 1_000_000)
 	}
 
-	readback_data_ptr: rawptr
+	readback_data_ptr: ^ImageArray
 	result(daxa.dvc_buffer_host_address(
 		device   = ctx.device,
-		buffer   = staging_upload_buffer,
-		out_addr = &readback_data_ptr,
+		buffer   = staging_readback_buffer,
+		out_addr = (^rawptr)(&readback_data_ptr),
 	))
 
-	readback_data := (^ImageArray)(readback_data_ptr)^
+	readback_data := readback_data_ptr^
 
 	log.info("Original data: ")
 	{
@@ -1069,5 +1076,297 @@ copy_test :: proc() {
 	}
 
 	assert(data == readback_data)
+
+	daxa.dvc_destroy_buffer(ctx.device, staging_upload_buffer)
+	daxa.dvc_destroy_buffer(ctx.device, device_local_buffer)
+	daxa.dvc_destroy_buffer(ctx.device, staging_readback_buffer)
+	daxa.dvc_destroy_image(ctx.device, image_1)
+	daxa.dvc_destroy_image(ctx.device, image_2)
+
+}
+
+cmd_deferred_destruction_test :: proc() {
+
+	recorder: daxa.CommandRecorder
+	result(daxa.dvc_create_command_recorder(ctx.device, &{{},daxa.small_string("deferred destruction cmd")}, &recorder))
+
+	buffer: daxa.BufferId
+	result(daxa.dvc_create_buffer(ctx.device, &{size = 4}, out_id = &buffer))
+
+	image: daxa.ImageId
+	image_info := daxa.DEFAULT_IMAGE_INFO
+	image_info.size = {1, 1, 1}
+	image_info.usage = {.COLOR_ATTACHMENT}
+	result(daxa.dvc_create_image(
+		device = ctx.device,
+		info = &image_info,
+		out_id = &image,
+	))
+
+	image_view: daxa.ImageViewId
+	image_view_info := daxa.DEFAULT_IMAGE_VIEW_INFO
+	image_view_info.image = image
+	result(daxa.dvc_create_image_view(ctx.device, &image_view_info, &image_view))
+
+	sampler: daxa.SamplerId
+	sampler_info := daxa.DEFAULT_SAMPLER_INFO
+	result(daxa.dvc_create_sampler(ctx.device, &sampler_info, &sampler))
+
+	// The gpu resources are not destroyed here. Their destruction is deferred until the command list completes execution on the gpu.
+	daxa.cmd_destroy_buffer_deferred(recorder, buffer)
+	daxa.cmd_destroy_image_deferred(recorder, image)
+	daxa.cmd_destroy_image_view_deferred(recorder, image_view)
+	daxa.cmd_destroy_sampler_deferred(recorder, sampler)
+
+	executable_commands: daxa.ExecutableCommandList
+	result(daxa.cmd_complete_current_commands(recorder, &executable_commands))
+
+	// Even after this call the resources will still be alive, as zombie resources are not checked to be dead in submit calls.
+	result(daxa.dvc_submit(ctx.device, &{command_lists = &executable_commands, command_list_count = 1,},))
+}
+
+cmd_multiple_ecl_test :: proc() {
+	buf_a: daxa.BufferId
+	result(daxa.dvc_create_buffer(ctx.device, &{size = 4, allocate_info = {.HOST_ACCESS_SEQUENTIAL_WRITE}, name = daxa.small_string("buf_a")}, out_id = &buf_a))
+	buf_b: daxa.BufferId
+	result(daxa.dvc_create_buffer(ctx.device, &{size = 4, name = daxa.small_string("buf_b")}, out_id = &buf_b))
+	buf_c: daxa.BufferId
+	result(daxa.dvc_create_buffer(ctx.device, &{size = 4, allocate_info = {.HOST_ACCESS_RANDOM}, name = daxa.small_string("buf_c")}, out_id = &buf_c))
+	
+	TEST_VALUE :: 0xf0abf0ab 
+
+
+	value_ptr: ^u32
+	result(daxa.dvc_buffer_host_address(
+		device   = ctx.device,
+		buffer   = buf_a,
+		out_addr = (^rawptr)(&value_ptr),
+	))
+
+	
+
+	value_ptr^ = TEST_VALUE
+
+	recorder: daxa.CommandRecorder
+	result(daxa.dvc_create_command_recorder(ctx.device, &{}, &recorder))
+
+	fmt.println(buf_a, buf_b, buf_c)
+
+
+	result(daxa.cmd_copy_buffer_to_buffer(
+		cmd_enc = recorder,
+		info = &{
+			src_buffer = buf_a,
+			dst_buffer = buf_b,
+			size = 4,
+		}
+	))
+
+	executable_commands_0: daxa.ExecutableCommandList
+	result(daxa.cmd_complete_current_commands(recorder, &executable_commands_0))
+
+	result(daxa.cmd_copy_buffer_to_buffer(
+		cmd_enc = recorder,
+		info = &{
+			src_buffer = buf_b,
+			dst_buffer = buf_c,
+			size = 4,
+		}
+	))
+
+	executable_commands_1: daxa.ExecutableCommandList
+	result(daxa.cmd_complete_current_commands(recorder, &executable_commands_1))
+
+	sema: daxa.BinarySemaphore
+	result(daxa.dvc_create_binary_semaphore(
+		ctx.device,
+		info = &{ daxa.small_string("binary sema") },
+		out_binary_semaphore = &sema,
+	))
+
+	result(daxa.dvc_submit(
+		ctx.device,
+		&{
+			command_lists = &executable_commands_0,
+			command_list_count = 1,
+			signal_binary_semaphores = &sema,
+			signal_binary_semaphore_count = 1,
+		},
+	))
+
+	result(daxa.dvc_submit(
+		ctx.device,
+		&{
+			wait_stages = {.TRANSFER},
+			command_lists = &executable_commands_1,
+			command_list_count = 1,
+			wait_binary_semaphores = &sema,
+			wait_binary_semaphore_count = 1,
+		},
+	))
+
+	daxa.executable_commands_dec_refcnt(executable_commands_0)
+	daxa.executable_commands_dec_refcnt(executable_commands_1)
+
+	result(daxa.dvc_wait_idle(ctx.device))
+
+	readback_value_ptr: ^u32
+	result(daxa.dvc_buffer_host_address(
+		device   = ctx.device,
+		buffer   = buf_c,
+		out_addr = (^rawptr)(&readback_value_ptr),
+	))
+	readback_value := readback_value_ptr^
+
+	assert(readback_value == TEST_VALUE, "TEST VALUE DOES NOT MATCH READBACK VALUE")
+
+	daxa.dvc_destroy_buffer(ctx.device, buf_c)
+        daxa.dvc_destroy_buffer(ctx.device, buf_b)
+        daxa.dvc_destroy_buffer(ctx.device, buf_a)
+}
+
+cmd_build_acceleration_structure_test :: proc(){
+	
+	vertices := [?]f64{
+		0.25, 0.75, 0.5,
+		0.5,  0.25, 0.5,
+		0.75, 0.75, 0.5,
+	}
+	vertex_buffer: daxa.BufferId
+	result(daxa.dvc_create_buffer(
+		ctx.device,
+		&{
+			size = size_of(vertices),
+			allocate_info = {.HOST_ACCESS_RANDOM},
+			name = daxa.small_string("vertex buffer")
+		},
+		out_id = &vertex_buffer
+	))
+	defer daxa.dvc_destroy_buffer(ctx.device, vertex_buffer)
+	vertex_ptr := &vertices
+	result(daxa.dvc_buffer_host_address(ctx.device, vertex_buffer, (^rawptr)(&vertex_ptr),))
+	vertex_ptr^ = vertices
+
+	indices := [?]u32{0, 1, 2}
+	index_buffer: daxa.BufferId
+	result(daxa.dvc_create_buffer(
+		ctx.device,
+		&{
+			size = size_of(indices),
+			allocate_info = {.HOST_ACCESS_RANDOM},
+			name = daxa.small_string("vertex buffer"),
+		},
+		out_id = &index_buffer,
+	))
+	defer daxa.dvc_destroy_buffer(ctx.device, index_buffer)
+	index_ptr := &indices
+	result(daxa.dvc_buffer_host_address(ctx.device, index_buffer, (^rawptr)(&index_ptr),))
+	index_ptr^ = indices
+
+	transform := matrix[3, 4]f32{
+		1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+	}
+	transform_buffer: daxa.BufferId
+	result(daxa.dvc_create_buffer(
+		ctx.device,
+		&{
+			size = size_of(transform),
+			allocate_info = {.HOST_ACCESS_RANDOM},
+			name = daxa.small_string("transform buffer"),
+		},
+		out_id = &transform_buffer,
+	))
+	defer daxa.dvc_destroy_buffer(ctx.device, transform_buffer)
+	transform_ptr := &transform
+	result(daxa.dvc_buffer_host_address(ctx.device, transform_buffer, (^rawptr)(&transform_ptr),))
+	transform_ptr^ = transform
+
+	geometries := daxa.BlasTriangleGeometryInfo{
+		vertex_format  = .R32G32B32_SFLOAT,
+		vertex_data    = {}, // Ignored in get_acceleration_structure_build_sizes.
+		vertex_stride  = size_of([3]f32),
+		max_vertex     = u32((len(vertices) - 1)),
+		index_type     = .UINT32,
+		index_data     = {},     // Ignored in get_acceleration_structure_build_sizes.
+		transform_data = {}, // Ignored in get_acceleration_structure_build_sizes.
+		count          = 1,
+		flags          = {},
+	}
+
+	accel_build_info := daxa.BlasBuildInfo{
+		flags = {.PREFER_FAST_TRACE},
+		dst_blas = {}, // Ignored in get_acceleration_structure_build_sizes.
+		geometries = { { triangles = { triangles = &geometries, count = 1 } }, 0 },
+		scratch_data = {}, // Ignored in get_acceleration_structure_build_sizes.
+	}
+
+	accel_build_size_info: daxa.AccelerationStructureBuildSizesInfo
+	result(daxa.dvc_get_blas_build_sizes(ctx.device, &accel_build_info, &accel_build_size_info))
+
+
+	log.warn(accel_build_size_info.build_scratch_size)
+	log.warn(accel_build_size_info.acceleration_structure_size)
+	scratch_buffer: daxa.BufferId
+	result(daxa.dvc_create_buffer(
+		device = ctx.device,
+		info = &{
+			size = uint(accel_build_size_info.build_scratch_size),
+			name = daxa.small_string("scratch buffer"),
+		},
+		out_id = &scratch_buffer,
+	))
+	defer daxa.dvc_destroy_buffer(ctx.device, scratch_buffer)
+
+	blas: daxa.BlasId
+	result(daxa.dvc_create_blas(
+		device = ctx.device,
+		info = &{
+			size = accel_build_size_info.acceleration_structure_size,
+			name = daxa.small_string("test blas"),
+		},
+		out_id = &blas,
+	))
+	defer daxa.dvc_destroy_blas(ctx.device, blas)
+
+	device_address :: proc(buffer: daxa.BufferId) -> daxa.DeviceAddress {
+		address: daxa.DeviceAddress
+		result(daxa.dvc_buffer_device_address(
+			device   = ctx.device,
+			buffer   = buffer,
+			out_addr = &address,
+		))
+		return address
+	}
+
+	tri_geom := &accel_build_info.geometries.values.triangles.triangles
+	tri_geom^.vertex_data = device_address(vertex_buffer)
+	tri_geom^.index_data = device_address(index_buffer)
+	tri_geom^.transform_data = device_address(transform_buffer)
+	accel_build_info.dst_blas = blas
+	accel_build_info.scratch_data = device_address(scratch_buffer)
+
+
+	recorder: daxa.CommandRecorder
+	result(daxa.dvc_create_command_recorder(ctx.device, &{}, &recorder))
+
+
+	result(daxa.cmd_build_acceleration_structures(
+		recorder,
+		&{ blas_build_infos = &accel_build_info, blas_build_info_count = 1 },
+	))
+	
+	executable_commands: daxa.ExecutableCommandList
+	result(daxa.cmd_complete_current_commands(recorder, &executable_commands))
+	
+	result(daxa.dvc_submit(
+		ctx.device,
+		&{
+			command_lists = &executable_commands,
+			command_list_count = 1,
+		},
+	))
+	daxa.dvc_wait_idle(ctx.device)
 
 }

@@ -169,11 +169,12 @@ ImageSlice :: struct {
 	array_layer: u32,
 }
 
-MemoryFlags :: bit_set[MemoryFlag; u32]
 MemoryFlag :: enum u32 {
 	HOST_ACCESS_SEQUENTIAL_WRITE = 10,
 	HOST_ACCESS_RANDOM = 11,
 }
+MemoryFlags :: bit_set[MemoryFlag; u32]
+MEMORY_FLAG_NONE :: MemoryFlags{}
 
 MemoryBlockInfo :: struct {
 	requirements: vk.MemoryRequirements,

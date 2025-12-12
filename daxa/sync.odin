@@ -123,10 +123,10 @@ ACCESS_CLEAR_READ                  :: Access{stages = {.CLEAR},                 
 ACCESS_INDEX_INPUT_READ            :: Access{stages = {.INDEX_INPUT},                       access_type = {.MEMORY_READ}}
 ACCESS_PRE_RASTERIZATION_SHADERS_READ :: Access{stages = {.PRE_RASTERIZATION_SHADERS},      access_type = {.MEMORY_READ}}
 // not added to odin vk bindings yet
-// ACCESS_TASK_SHADER_READ            :: Access{stages = {.TASK_SHADER},                       access_type = {.MEMORY_READ}}
-// ACCESS_MESH_SHADER_READ            :: Access{stages = {.MESH_SHADER},                       access_type = {.MEMORY_READ}}
-// ACCESS_ACCELERATION_STRUCTURE_BUILD_READ :: Access{stages = {.ACCELERATION_STRUCTURE_BUILD}, access_type = {.MEMORY_READ}}
-// ACCESS_RAY_TRACING_SHADER_READ     :: Access{stages = {.RAY_TRACING_SHADER},                access_type = {.MEMORY_READ}}
+ACCESS_TASK_SHADER_READ            :: Access{stages = {.TASK_SHADER_EXT},                       access_type = {.MEMORY_READ}}
+ACCESS_MESH_SHADER_READ            :: Access{stages = {.MESH_SHADER_EXT},                       access_type = {.MEMORY_READ}}
+ACCESS_ACCELERATION_STRUCTURE_BUILD_READ :: Access{stages = {.ACCELERATION_STRUCTURE_BUILD_KHR}, access_type = {.MEMORY_READ}}
+ACCESS_RAY_TRACING_SHADER_READ     :: Access{stages = {.RAY_TRACING_SHADER_KHR},                access_type = {.MEMORY_READ}}
 
 ACCESS_TOP_OF_PIPE_WRITE           :: Access{stages = {.TOP_OF_PIPE},                       access_type = {.MEMORY_WRITE}}
 ACCESS_DRAW_INDIRECT_WRITE         :: Access{stages = {.DRAW_INDIRECT},                     access_type = {.MEMORY_WRITE}}
@@ -148,10 +148,10 @@ ACCESS_BLIT_WRITE                  :: Access{stages = {.BLIT},                  
 ACCESS_CLEAR_WRITE                 :: Access{stages = {.CLEAR},                             access_type = {.MEMORY_WRITE}}
 ACCESS_INDEX_INPUT_WRITE           :: Access{stages = {.INDEX_INPUT},                       access_type = {.MEMORY_WRITE}}
 ACCESS_PRE_RASTERIZATION_SHADERS_WRITE :: Access{stages = {.PRE_RASTERIZATION_SHADERS},     access_type = {.MEMORY_WRITE}}
-// ACCESS_TASK_SHADER_WRITE           :: Access{stages = {.TASK_SHADER},                       access_type = {.MEMORY_WRITE}}
-// ACCESS_MESH_SHADER_WRITE           :: Access{stages = {.MESH_SHADER},                       access_type = {.MEMORY_WRITE}}
-// ACCESS_ACCELERATION_STRUCTURE_BUILD_WRITE :: Access{stages = {.ACCELERATION_STRUCTURE_BUILD}, access_type = {.MEMORY_WRITE}}
-// ACCESS_RAY_TRACING_SHADER_WRITE    :: Access{stages = {.RAY_TRACING_SHADER},                access_type = {.MEMORY_WRITE}}
+ACCESS_TASK_SHADER_WRITE           :: Access{stages = {.TASK_SHADER_EXT},                       access_type = {.MEMORY_WRITE}}
+ACCESS_MESH_SHADER_WRITE           :: Access{stages = {.MESH_SHADER_EXT},                       access_type = {.MEMORY_WRITE}}
+ACCESS_ACCELERATION_STRUCTURE_BUILD_WRITE :: Access{stages = {.ACCELERATION_STRUCTURE_BUILD_KHR}, access_type = {.MEMORY_WRITE}}
+ACCESS_RAY_TRACING_SHADER_WRITE    :: Access{stages = {.RAY_TRACING_SHADER_KHR},                access_type = {.MEMORY_WRITE}}
 
 ACCESS_TOP_OF_PIPE_READ_WRITE      :: Access{stages = {.TOP_OF_PIPE},                       access_type = {.MEMORY_READ, .MEMORY_WRITE}}
 ACCESS_DRAW_INDIRECT_READ_WRITE    :: Access{stages = {.DRAW_INDIRECT},                     access_type = {.MEMORY_READ, .MEMORY_WRITE}}
@@ -175,7 +175,7 @@ ACCESS_BLIT_READ_WRITE             :: Access{stages = {.BLIT},                  
 ACCESS_CLEAR_READ_WRITE            :: Access{stages = {.CLEAR},                             access_type = {.MEMORY_READ, .MEMORY_WRITE}}
 ACCESS_INDEX_INPUT_READ_WRITE      :: Access{stages = {.INDEX_INPUT},                       access_type = {.MEMORY_READ, .MEMORY_WRITE}}
 ACCESS_PRE_RASTERIZATION_SHADERS_READ_WRITE :: Access{stages = {.PRE_RASTERIZATION_SHADERS}, access_type = {.MEMORY_READ, .MEMORY_WRITE}}
-// ACCESS_TASK_SHADER_READ_WRITE      :: Access{stages = {.TASK_SHADER},                       access_type = {.MEMORY_READ, .MEMORY_WRITE}}
-// ACCESS_MESH_SHADER_READ_WRITE      :: Access{stages = {.MESH_SHADER},                       access_type = {.MEMORY_READ, .MEMORY_WRITE}}
-// ACCESS_ACCELERATION_STRUCTURE_BUILD_READ_WRITE :: Access{stages = {.ACCELERATION_STRUCTURE_BUILD}, access_type = {.MEMORY_READ, .MEMORY_WRITE}}
-// ACCESS_RAY_TRACING_SHADER_READ_WRITE :: Access{stages = {.RAY_TRACING_SHADER},             access_type = {.MEMORY_READ, .MEMORY_WRITE}}
+ACCESS_TASK_SHADER_READ_WRITE      :: Access{stages = {.TASK_SHADER_EXT},                       access_type = {.MEMORY_READ, .MEMORY_WRITE}}
+ACCESS_MESH_SHADER_READ_WRITE      :: Access{stages = {.MESH_SHADER_EXT},                       access_type = {.MEMORY_READ, .MEMORY_WRITE}}
+ACCESS_ACCELERATION_STRUCTURE_BUILD_READ_WRITE :: Access{stages = {.ACCELERATION_STRUCTURE_BUILD_KHR}, access_type = {.MEMORY_READ, .MEMORY_WRITE}}
+ACCESS_RAY_TRACING_SHADER_READ_WRITE :: Access{stages = {.RAY_TRACING_SHADER_KHR},             access_type = {.MEMORY_READ, .MEMORY_WRITE}}
