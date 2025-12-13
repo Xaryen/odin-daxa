@@ -6,9 +6,10 @@ import vk "vendor:vulkan"
 foreign import lib "daxa.lib"
 _ :: lib
 
-DAXA_MAX_COMPUTE_QUEUE_COUNT  :: 4
-DAXA_MAX_TRANSFER_QUEUE_COUNT :: 2
-DAXA_MAX_TOTAL_QUEUE_COUNT    :: (1+DAXA_MAX_COMPUTE_QUEUE_COUNT+DAXA_MAX_TRANSFER_QUEUE_COUNT)
+// info only, these aren't exposed through the api
+MAX_COMPUTE_QUEUE_COUNT  :: 4
+MAX_TRANSFER_QUEUE_COUNT :: 2
+MAX_TOTAL_QUEUE_COUNT    :: (1 + MAX_COMPUTE_QUEUE_COUNT + MAX_TRANSFER_QUEUE_COUNT)
 
 DeviceType :: enum i32 {
 	OTHER          = 0,
@@ -430,8 +431,8 @@ DeviceMemoryReport :: struct {
 MemoryImageCopyFlag :: enum i32 {
 	MEMCPY = 1,
 }
-
 MemoryImageCopyFlags :: bit_set[MemoryImageCopyFlag; i32]
+
 
 MemoryToImageCopyInfo :: struct {
 	flags:        MemoryImageCopyFlags,

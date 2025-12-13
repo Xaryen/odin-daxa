@@ -1,6 +1,6 @@
 package daxa
 
-@(require, extra_linker_flags="/NODEFAULTLIB:libcmt")
+// @(require, extra_linker_flags="/NODEFAULTLIB:libcmt")
 foreign import lib "daxa.lib"
 _ :: lib
 

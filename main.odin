@@ -25,22 +25,23 @@ ctx := Program{}
 
 result :: proc(res: daxa.Result, loc := #caller_location, exp := #caller_expression) {
 	if res > .SUCCESS {
-	fmt.eprintfln("DAXA ERROR: %v %v %v", res, loc, exp)
-	assert(false, "result failed")
+		log.errorf("DAXA ERROR: %v %v %v", res, loc, exp)
+		assert(false, "result failed")
 	}
-	log.info(res, loc, exp)
+	log.debug(res, loc, exp)
 }
 
 get_native_handle :: proc() -> daxa.NativeWindowHandle {
 	return glfw.GetWin32Window(ctx.window)
 }
 
-get_native_platform :: proc() -> daxa.NativeWindowPlatform {
-	switch glfw.GetPlatform() {
-	case glfw.PLATFORM_WIN32: return daxa.NativeWindowPlatform.WIN32_API
-	case: panic("Unsupported Platform.")
-	}
-}
+// get_native_platform :: proc() -> daxa.NativeWindowPlatform {
+	// GetPlatform generates linking error when compiling with ASAN so it won't be used in the samples
+// 	switch glfw.GetPlatform() {
+// 	case glfw.PLATFORM_WIN32: return daxa.NativeWindowPlatform.WIN32_API
+// 	case: panic("Unsupported Platform.")
+// 	}
+// }
 
 set_mouse_capture :: #force_inline proc(should_capture: bool) {
 	glfw.SetCursorPos(ctx.window, cast(f64)(ctx.w / 2.), cast(f64)(ctx.h / 2.))
@@ -91,29 +92,27 @@ main :: proc() {
 
 	device_info := daxa.DEFAULT_DEVICE_INFO_2
 	result(daxa.instance_choose_device(ctx.instance, {.SWAPCHAIN}, &device_info))
-
-	
 	result(daxa.instance_create_device_2(ctx.instance, &device_info, &ctx.device))
 
 	test_props := daxa.dvc_properties(ctx.device)
-	fmt.printfln("%s", bytes.trim_null(test_props.device_name[:]))
+	log.infof("%s", bytes.trim_null(test_props.device_name[:]))
+
 
 	swapchaininfo := daxa.SwapchainInfo{
 		native_window           = get_native_handle(),
-		native_window_platform  = get_native_platform(),
+		native_window_platform  = daxa.NativeWindowPlatform.WIN32_API,
 		surface_format_selector = proc "c" (format: vk.Format) -> i32 {
 			#partial switch format {
 			case .R8G8B8A8_UNORM: return 100
 			case: return daxa.default_format_selector(format)
 			}
 		},
-		present_mode                 = .MAILBOX,
+		present_mode                 = .FIFO,
 		present_operation            = {.IDENTITY},
 		image_usage                  = {.TRANSFER_DST},
 		max_allowed_frames_in_flight = 2,
 		name                         = daxa.small_string("test swapchain"),
 	}
-
 	result(daxa.dvc_create_swapchain(ctx.device, &swapchaininfo, &ctx.swapchain))
 
 	
@@ -127,12 +126,21 @@ main :: proc() {
 
 	}
 
-	// pink_screen()
+	{
+		async_queues_basics()
+		async_queues_simple_submit_chain()
+		async_queues_mesh_shader_test()
+	}
 
-	// triangle()
+	{
 
-	// compute_triangle()
+	pink_screen()
 
+	triangle()
+
+	compute_triangle()
+
+	}
 	result(daxa.dvc_wait_idle(ctx.device))
 	result(daxa.dvc_collect_garbage(ctx.device))
 	daxa.dvc_dec_refcnt(ctx.device)
@@ -348,7 +356,7 @@ compute_triangle :: proc() {
 		result(daxa.dvc_collect_garbage(ctx.device))
 
 		log.info("end frame:", i)
-		// if i > 1000 do break
+		if i > 120 do break
 	}
 
 }
@@ -573,8 +581,7 @@ triangle :: proc() {
 		result(daxa.dvc_collect_garbage(ctx.device))
 
 		log.info("end frame:", i)
-		// break
-	}
+		if i > 120 do break	}
 }
 
 pink_screen :: proc() {
@@ -694,6 +701,7 @@ pink_screen :: proc() {
 		result(daxa.dvc_collect_garbage(ctx.device))
 
 		log.info("end frame:", i)
+		if i > 120 do break
 	}
 }
 
@@ -1051,7 +1059,7 @@ cmd_copy_test :: proc() {
 	log.info(query_results)
 
 	if ((query_results[1] != 0) && (query_results[3] != 0)) {
-		fmt.printfln("gpu execution took %v ms", f64(query_results[2] - query_results[0]) / 1_000_000)
+		log.infof("gpu execution took %v ms", f64(query_results[2] - query_results[0]) / 1_000_000)
 	}
 
 	readback_data_ptr: ^ImageArray
@@ -1142,16 +1150,11 @@ cmd_multiple_ecl_test :: proc() {
 		buffer   = buf_a,
 		out_addr = (^rawptr)(&value_ptr),
 	))
-
-	
-
 	value_ptr^ = TEST_VALUE
+
 
 	recorder: daxa.CommandRecorder
 	result(daxa.dvc_create_command_recorder(ctx.device, &{}, &recorder))
-
-	fmt.println(buf_a, buf_b, buf_c)
-
 
 	result(daxa.cmd_copy_buffer_to_buffer(
 		cmd_enc = recorder,
@@ -1356,6 +1359,14 @@ cmd_build_acceleration_structure_test :: proc(){
 		recorder,
 		&{ blas_build_infos = &accel_build_info, blas_build_info_count = 1 },
 	))
+
+	daxa.cmd_pipeline_barrier(
+		cmd_enc = recorder,
+		info = &{
+			src_access = daxa.ACCESS_ACCELERATION_STRUCTURE_BUILD_WRITE,
+			dst_access = daxa.ACCESS_ACCELERATION_STRUCTURE_BUILD_READ,
+		},
+	)
 	
 	executable_commands: daxa.ExecutableCommandList
 	result(daxa.cmd_complete_current_commands(recorder, &executable_commands))
@@ -1369,4 +1380,179 @@ cmd_build_acceleration_structure_test :: proc(){
 	))
 	daxa.dvc_wait_idle(ctx.device)
 
+}
+
+async_queues_basics :: proc() {
+
+	compute_queue_count, transfer_queue_count: u32
+	result(daxa.dvc_queue_count(ctx.device, .COMPUTE, &compute_queue_count))
+	result(daxa.dvc_queue_count(ctx.device, .TRANSFER, &transfer_queue_count))
+	log.info("Device has", compute_queue_count, "async compute and", transfer_queue_count, "async transfer queues.")
+	// currently 4 by default, up to max of 8, can be specified when compiling the c++ lib
+	log.infof("Daxa's maximum for async compute queues is %v and daxa's maximum for async transfer queues is %v.", daxa.MAX_COMPUTE_QUEUE_COUNT, daxa.MAX_TRANSFER_QUEUE_COUNT)
+
+	daxa.dvc_queue_wait_idle(ctx.device, {.MAIN, 0})
+	for queue in 0..< compute_queue_count {
+	    daxa.dvc_queue_wait_idle(ctx.device, {.COMPUTE, queue})
+	}     
+	for queue in 0..< transfer_queue_count {
+	    daxa.dvc_queue_wait_idle(ctx.device, {.TRANSFER, queue})
+	}   
+}
+
+async_queues_simple_submit_chain :: proc() {
+	{
+		commands: daxa.ExecutableCommandList
+		recorder: daxa.CommandRecorder
+		result(daxa.dvc_create_command_recorder(ctx.device, &{}, &recorder))
+		result(daxa.cmd_complete_current_commands(recorder, &commands))
+	}
+
+	sema0, sema1: daxa.BinarySemaphore
+	result(daxa.dvc_create_binary_semaphore( ctx.device, &{name = daxa.small_string("sema 0")}, &sema0))
+	result(daxa.dvc_create_binary_semaphore( ctx.device, &{name = daxa.small_string("sema 1")}, &sema1))
+
+	initial_value := u32(42)
+
+	buffer: daxa.BufferId
+	result(daxa.dvc_create_buffer(
+		device = ctx.device,
+		info = &{
+			size = size_of([4]u32),
+			allocate_info = {.HOST_ACCESS_RANDOM},
+			name = daxa.small_string("buffer"),
+		},
+		out_id = &buffer,
+	))
+	buffer_ptr: ^[4]u32
+	result(daxa.dvc_buffer_host_address(ctx.device, buffer, (^rawptr)(&buffer_ptr)))
+	buffer_ptr[0] = initial_value
+
+	{
+		// Copy from index 0 to index 1
+		// Command recorders queue family MUST match the queue it is submitted to.
+		// Commands for a transfer queue MUST ONLY be recorded by a transfer command recorder!
+		// A generic or compute command recorder can not record commands for a transfer queue!
+		// Tho transfer command recorders CAN record commands for any queue.
+		recorder: daxa.CommandRecorder
+		result(daxa.dvc_create_command_recorder(ctx.device, &{queue_family = .TRANSFER}, &recorder))
+		daxa.cmd_pipeline_barrier(recorder, &{ daxa.ACCESS_TRANSFER_WRITE, daxa.ACCESS_TRANSFER_READ_WRITE} )
+	
+		result(daxa.cmd_copy_buffer_to_buffer(
+			cmd_enc = recorder,
+			info = &{
+				src_buffer = buffer,
+				dst_buffer = buffer,
+				src_offset = size_of(u32) * 0,
+				dst_offset = size_of(u32) * 1,
+				size = size_of(u32),
+			}
+		))
+
+		daxa.cmd_pipeline_barrier( cmd_enc = recorder, info = &{ daxa.ACCESS_TRANSFER_WRITE, daxa.ACCESS_TRANSFER_READ_WRITE })
+		
+		commands: daxa.ExecutableCommandList
+		result(daxa.cmd_complete_current_commands(recorder, &commands))
+		daxa.dvc_submit(
+			ctx.device, 
+			info = &{
+				queue = {.TRANSFER, 0},
+				command_lists = &commands,
+				command_list_count = 1,
+				signal_binary_semaphores = &sema0,
+				signal_binary_semaphore_count = 1,
+			}
+		)
+	}
+
+	{
+		// Copy from index 1 to index 2
+		// Command recorders queue family MUST match the queue it is submitted to.
+		// Commands for a compute queue can only be recorded by a compute or a transfer command recorder!
+		// A generic command recorder is not allowed to record commands for a compute queue!
+		recorder: daxa.CommandRecorder
+		result(daxa.dvc_create_command_recorder(ctx.device, &{queue_family = .COMPUTE}, &recorder))
+		daxa.cmd_pipeline_barrier(recorder, &{ daxa.ACCESS_TRANSFER_READ_WRITE, daxa.ACCESS_TRANSFER_READ_WRITE} )
+	
+		result(daxa.cmd_copy_buffer_to_buffer(
+			cmd_enc = recorder,
+			info = &{
+				src_buffer = buffer,
+				dst_buffer = buffer,
+				src_offset = size_of(u32) * 1,
+				dst_offset = size_of(u32) * 2,
+				size = size_of(u32),
+			}
+		))
+
+		daxa.cmd_pipeline_barrier( cmd_enc = recorder, info = &{ daxa.ACCESS_TRANSFER_WRITE, daxa.ACCESS_TRANSFER_READ_WRITE })
+		
+		commands: daxa.ExecutableCommandList
+		result(daxa.cmd_complete_current_commands(recorder, &commands))
+		daxa.dvc_submit(
+			ctx.device, 
+			info = &{
+				queue = {.COMPUTE, 1},
+				command_lists = &commands,
+				command_list_count = 1,
+				wait_binary_semaphores = &sema0,
+				wait_binary_semaphore_count = 1,
+				signal_binary_semaphores = &sema1,
+				signal_binary_semaphore_count = 1,
+			}
+		)
+	}
+
+	{
+		// Copy from index 2 to index 3
+		// Any command recorder type can be used to submit commands to the main queue.
+		recorder: daxa.CommandRecorder
+		// daxa::QueueFamily::MAIN // The default is the main queue family
+		// The Queue MUST be main here as its a generic command recorder
+		result(daxa.dvc_create_command_recorder(ctx.device, &{}, &recorder))
+		daxa.cmd_pipeline_barrier(recorder, &{ daxa.ACCESS_TRANSFER_READ_WRITE, daxa.ACCESS_TRANSFER_READ_WRITE} )
+	
+		result(daxa.cmd_copy_buffer_to_buffer(
+			cmd_enc = recorder,
+			info = &{
+				src_buffer = buffer,
+				dst_buffer = buffer,
+				src_offset = size_of(u32) * 2,
+				dst_offset = size_of(u32) * 3,
+				size = size_of(u32),
+			}
+		))
+
+		daxa.cmd_pipeline_barrier( cmd_enc = recorder, info = &{ daxa.ACCESS_TRANSFER_WRITE, daxa.ACCESS_TRANSFER_READ_WRITE })
+		
+		commands: daxa.ExecutableCommandList
+		result(daxa.cmd_complete_current_commands(recorder, &commands))
+		daxa.dvc_submit(
+			ctx.device, 
+			info = &{
+				// .queue = daxa::Queue::MAIN, // The default is the main queue.
+				command_lists = &commands,
+				command_list_count = 1,
+				wait_binary_semaphores = &sema1,
+				wait_binary_semaphore_count = 1,
+			}
+		)
+	}
+
+	// The semaphores make sure that the queues submissions are processed in the correct order (transfer0 -> comp0 -> main).
+
+	// As the queues are synchronized via semaphores and the main queue is the last to run,
+	// we can safely assume that all work is done, as soon as the main queue is drained.
+	daxa.dvc_queue_wait_idle(ctx.device, {.MAIN, 0})
+
+	result_ptr: ^[4]u32
+	daxa.dvc_buffer_host_address(ctx.device, buffer, (^rawptr)(&result_ptr))
+
+	assert(result_ptr[3] == initial_value)
+
+	daxa.dvc_destroy_buffer(ctx.device, buffer)
+}
+
+async_queues_mesh_shader_test :: proc() {
+	
 }
